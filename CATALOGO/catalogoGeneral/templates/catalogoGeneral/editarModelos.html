@@ -1,0 +1,272 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Modelo - Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+    <style>
+        .tipos-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        
+        .tabla-tipos {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .tabla-tipos th, .tabla-tipos td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tabla-tipos th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .tabla-tipos tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .tipo-seleccionado {
+            background-color: #e8f5e9;
+        }
+        
+        .filtro-tipos {
+            margin-bottom: 10px;
+        }
+        
+        .readonly-field {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        .alert-auto-close {
+            animation: fadeInOut 4s forwards;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); visibility: hidden; height: 0; padding: 0; margin: 0; }
+        }
+        
+        /* Estilo para radio buttons */
+        .radio-tipo {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        
+        .tipo-option {
+            cursor: pointer;
+        }
+        
+        .tipo-option:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>Editar Modelo</h1>
+                <a href="{% url 'gestion_modelos' %}" class="btn-back">← Volver a Modelos</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Mensajes de Django -->
+        {% if messages %}
+    {% for message in messages %}
+        <div  class="alerta">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% endif %}
+        
+        <div class="alert" id="alert-box" style="display: none;"></div>
+
+        <form method="POST" action="{% url 'actualizar_modelo' modelo_id=modelo.id %}" id="form-editar-modelo">
+            {% csrf_token %}
+            
+            <!-- Información de la marca (solo lectura) -->
+            <div class="form-group">
+                <label for="modelo-marca">Marca</label>
+                <input type="text" id="modelo-marca" class="readonly-field" 
+                       value="{{ modelo.marca.nombre }}" readonly>
+                <input type="hidden" name="marca_id" value="{{ modelo.marca.id }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="modelo-nombre">Nombre del Modelo</label>
+                <input type="text" id="modelo-nombre" name="nombre" value="{{ modelo.nombre }}" required>
+            </div>
+            
+            <!-- Selector de tipo de producto (solo uno) -->
+            <div class="form-group">
+                <label>Seleccione el tipo de producto</label>
+                <div class="tipos-container">
+                    <div class="filtro-tipos">
+                        <input type="text" id="filtro-tipos" placeholder="Filtrar tipos..." style="padding: 8px; width: 100%;">
+                    </div>
+                    <table class="tabla-tipos">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">Seleccionar</th>
+                                <th>Tipo de Producto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-body-tipos">
+                            {% for tipo in tiposMarca %}
+                                <tr class="tipo-option {% if tipo in tipoSeleccionado %}tipo-seleccionado{% endif %}" 
+                                    onclick="seleccionarTipo({{ tipo.id }})">
+                                    <td style="text-align: center;">
+                                        <!-- Radio button para selección única -->
+                                        <input type="radio" class="radio-tipo" name="tipo_id" 
+                                               value="{{ tipo.id }}" id="tipo-{{ tipo.id }}"
+                                               {% if tipo in tipoSeleccionado %}checked{% endif %}>
+                                    </td>
+                                    <td>{{ tipo.nombre }}</td>
+                                    <td>
+                                        {% if tipo.activo %}
+                                            <span style="color: green;">Activo</span>
+                                        {% else %}
+                                            <span style="color: red;">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" style="text-align: center; color: #666;">
+                                        No hay tipos de producto disponibles.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="modelo-descripcion">Descripción (opcional)</label>
+                <textarea id="modelo-descripcion" name="descripcion">{{ modelo.descripcion }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="modelo-activo">Estado</label>
+                <select id="modelo-activo" name="activo">
+                    <option value="true" {% if modelo.activo %}selected{% endif %}>Activo</option>
+                    <option value="false" {% if not modelo.activo %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            
+            <button type="submit">Actualizar Modelo</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Tipos seleccionados inicialmente:", "{% for tipo in tipoSeleccionado %}{{ tipo.id }}{% if not forloop.last %},{% endif %}{% endfor %}");
+            console.log("Tipos disponibles:", {{ tiposMarca|length }});
+            
+            // Mostrar info de debug en consola
+            {% for tipo in tipoSeleccionado %}
+                console.log("Tipo seleccionado: {{ tipo.id }} - {{ tipo.nombre }}");
+            {% endfor %}
+            
+            {% for tipo in tiposMarca %}
+                console.log("Tipo disponible: {{ tipo.id }} - {{ tipo.nombre }}");
+            {% endfor %}
+            
+            // Filtro de tipos
+            const filtroTipos = document.getElementById('filtro-tipos');
+            if (filtroTipos) {
+                filtroTipos.addEventListener('input', function() {
+                    const filtro = this.value.toLowerCase();
+                    const filas = document.querySelectorAll('#tabla-body-tipos tr');
+                    
+                    filas.forEach(fila => {
+                        // Saltar la fila de "no hay tipos" (solo tiene 1 celda)
+                        if (fila.cells.length <= 1) return;
+                        
+                        const textoFila = fila.textContent.toLowerCase();
+                        if (textoFila.includes(filtro)) {
+                            fila.style.display = '';
+                        } else {
+                            fila.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            // Manejo del formulario
+            const form = document.getElementById('form-editar-modelo');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Verificar que se haya seleccionado un tipo
+                    const tipoSeleccionado = document.querySelector('input[name="tipo_id"]:checked');
+                    if (!tipoSeleccionado) {
+                        e.preventDefault();
+                        mostrarAlerta('Por favor, seleccione un tipo de producto', 'error');
+                        return false;
+                    }
+                    
+                    // Validar nombre del modelo
+                    const nombreModelo = document.getElementById('modelo-nombre').value.trim();
+                    if (!nombreModelo) {
+                        e.preventDefault();
+                        mostrarAlerta('Por favor, ingrese un nombre para el modelo', 'error');
+                        return false;
+                    }
+                    
+                    console.log("Tipo seleccionado:", tipoSeleccionado.value);
+                    
+                    return true;
+                });
+            }
+        });
+        
+        // Función para seleccionar un tipo al hacer clic en la fila
+        function seleccionarTipo(tipoId) {
+            // Desmarcar todos los radio buttons primero
+            document.querySelectorAll('input[name="tipo_id"]').forEach(radio => {
+                radio.checked = false;
+                radio.closest('tr').classList.remove('tipo-seleccionado');
+            });
+            
+            // Marcar el seleccionado
+            const radioSeleccionado = document.getElementById('tipo-' + tipoId);
+            if (radioSeleccionado) {
+                radioSeleccionado.checked = true;
+                radioSeleccionado.closest('tr').classList.add('tipo-seleccionado');
+            }
+        }
+        
+        function mostrarAlerta(mensaje, tipo) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.textContent = mensaje;
+            alertBox.className = `alert ${tipo}`;
+            alertBox.style.display = 'block';
+            
+            // Desplazarse hacia la alerta
+            alertBox.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

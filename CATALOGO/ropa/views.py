@@ -1,0 +1,205 @@
+from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from catalogoGeneral.models import Producto, Marca, Color
+from django.db.models import Q
+from django.views.decorators.csrf import csrf_exempt
+import json
+from django.template.loader import render_to_string
+
+def catalogo_Ropa(request):
+    """Vista principal del catálogo"""
+    # Obtener todos los productos activos con sus relaciones
+    productos = Producto.objects.filter(activo=True, modelo__tipoProducto__nombre='Prendas').select_related(
+        'modelo__marca'
+    ).prefetch_related(
+        'colores', 
+        'imagenes'  # ← ¡Importante prefetch las imágenes!
+    )
+
+    # Obtener marcas y colores para los filtros
+    marcas = Marca.objects.filter(tipoProducto__nombre='Prendas')
+    listamarca = []
+    for marca in marcas:
+        if not marca.activo:
+            print(f'{marca.nombre} no está activo')
+        else:
+            listamarca.append(marca)
+    colores = Color.objects.filter(activo=True)
+    
+    # Aplicar filtros si se enviaron en la solicitud
+    marca_id = request.GET.get('marca')
+    color_id = request.GET.get('color')
+    precio_min = request.GET.get('precio_min')
+    precio_max = request.GET.get('precio_max')
+    
+    if marca_id:
+        productos = productos.filter(modelo__marca_id=marca_id)
+    
+    if color_id:
+        productos = productos.filter(colores__id=color_id)
+    
+    if precio_min:
+        productos = productos.filter(precio__gte=precio_min)
+    
+    if precio_max:
+        productos = productos.filter(precio__lte=precio_max)
+    
+    print(f'marcas : {listamarca}')
+    print(f'marcas : {type(marcas)}')
+    for marca in listamarca:
+        print(f'{marca.nombre} hola')
+
+    for color in colores:
+        print(f'{color.nombre} hola')
+        
+    context = {
+        'productos': productos,
+        'marcas': marcas,
+        'colores': colores,
+    }
+    
+    return render(request, 'catalogo_ropa.html', context)
+
+
+def detalle_producto(request, producto_id):
+    """Vista para mostrar el detalle de un producto específico"""
+    producto = get_object_or_404(
+        Producto.objects.select_related('modelo__marca')
+                       .prefetch_related('colores', 'tallas', 'imagenes'),
+        id=producto_id,
+        activo=True
+    )
+    
+    # Productos relacionados (misma marca o mismos colores)
+    productos_relacionados = Producto.objects.filter(
+        Q(modelo__marca=producto.modelo.marca) | Q(colores__in=producto.colores.all()),
+        activo=True
+    ).exclude(id=producto.id).distinct()[:4]
+    
+    context = {
+        'producto': producto,
+        'productos_relacionados': productos_relacionados,
+    }
+    
+    return render(request, 'detalle_producto.html', context)
+
+@csrf_exempt  # ¡IMPORTANTE! Añade este decorador
+def filtrar_productosRopa(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            marcas = data.get('marcas', [])
+            precio = data.get('precio', '')
+            
+            
+            print(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
+            
+            # Filtrar productos
+            productos = Producto.objects.all()
+            
+            productos = productos.filter(modelo__tipoProducto__nombre='Prendas').distinct()
+
+            if marcas:
+                productos = productos.filter(modelo__marca__id__in=marcas, modelo__tipoProducto__nombre='Prendas').distinct()
+                print(f"Productos después de filtrar por marcas: {productos.count()}")
+                
+            if precio:
+                if precio == '0-50':
+                    productos = productos.filter(precio__lt=50, modelo__tipoProducto__nombre='Prendas')
+                elif precio == '50-100':
+                    productos = productos.filter(precio__range=(50, 100),   modelo__tipoProducto__nombre='Prendas')
+                elif precio == '100-200':
+                    productos = productos.filter(precio__range=(100, 200) , modelo__tipoProducto__nombre='Prendas')
+                elif precio == '200+':
+                    productos = productos.filter(precio__gt=200, modelo__tipoProducto__nombre='Prendas')
+                print(f"Productos después de filtrar por precio: {productos.count()}")
+            
+           
+            
+            # Serializar los productos
+            productos_data = []
+            for producto in productos:
+                # Obtener la URL de la imagen
+                imagen_url = ''
+                if producto.imagenes.first():
+                    imagen_url = producto.imagenes.first().imagen.url
+                
+                producto_dict = {
+                    'id': producto.id,
+                    'marca': producto.modelo.marca.nombre,
+                    'nombre': producto.modelo.nombre,
+                    'precio': float(producto.precio),
+                    'precio_descuento': float(producto.precio_descuento) if producto.precio_descuento else None,
+                    'colores': [{
+                        'nombre': color.nombre,
+                        'codigo_hex': color.codigo_hex
+                    } for color in producto.colores.all()],
+                    'stock': producto.stock,
+                    'imagen_url': imagen_url
+                }
+                productos_data.append(producto_dict)
+            
+            print(f"Enviando {len(productos_data)} productos")
+            return JsonResponse({'productos': productos_data})
+            
+        except Exception as e:
+            print(f"Error en filtrar_productos: {str(e)}")
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def obtener_detalles_producto(request, producto_id):
+    if request.method == 'GET':
+        try:
+            print(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
+            producto = Producto.objects.get(id=producto_id)
+            print(f'Producto encontrado: {producto}')
+            # Serializar datos del producto
+            producto_data = {
+                'id': producto.id,
+                'marca': producto.modelo.marca.nombre,
+                'nombre': producto.modelo.nombre,
+                'descripcion': producto.modelo.descripcion,
+                'precio': float(producto.precio),
+                'precio_descuento': float(producto.precio_descuento) if producto.precio_descuento else None,
+                'stock': producto.stock,
+                'colores': [],
+                'tallas': [talla.valor for talla in producto.tallas.all()],
+                'imagenes': []
+            }
+
+            print(f'Producto data: {producto_data}')
+            
+            # Añadir colores
+            for color in producto.colores.all():
+                producto_data['colores'].append({
+                    'id': color.id,
+                    'nombre': color.nombre,
+                    'codigo_hex': color.codigo_hex
+                })
+
+            print(f'Colores añadidos: {producto_data["colores"]}')
+            print(f'data con colores: {producto_data}')
+            
+            # Añadir imágenes
+            for imagen in producto.imagenes.all():
+                producto_data['imagenes'].append({
+                    'id': imagen.id,
+                    'imagen_url': imagen.imagen.url,
+                    'color_id': imagen.color.id,
+                    'es_principal': imagen.es_principal
+                })
+
+            print(f'Imágenes añadidas: {producto_data["imagenes"]}')
+            print(f'data con imagenes: {producto_data}')
+            
+            return JsonResponse(producto_data)
+            
+        except Producto.DoesNotExist:
+            return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+

@@ -1,0 +1,648 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+    <style>
+        .colores-container, .tallas-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        
+        .tabla-colores, .tabla-tallas {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .tabla-colores th, .tabla-colores td,
+        .tabla-tallas th, .tabla-tallas td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tabla-colores th, .tabla-tallas th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .tabla-colores tr:hover, .tabla-tallas tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .filtro-colores, .filtro-tallas {
+            margin-bottom: 10px;
+        }
+        
+        .color-preview {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>Gestión de Catálogo</h1>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <ul class="nav-tabs">
+            <li><a href="{% url 'gestion_marcas' %}" class="tab-link ">Marcas</a></li>
+            <li><a href="{% url 'gestion_modelos' %}" class="tab-link ">Modelos</a></li>
+            <li><a href="{% url 'gestion_colores' %}" class="tab-link">Colores</a></li>
+            <li><a href="{% url 'gestion_tallas' %}" class="tab-link">Tallas</a></li>
+            <li><a href="{% url 'gestion_productos' %}" class="tab-link active">Productos</a></li>
+        </ul>
+        
+        <div class="alert" id="alert-box" style="display: none;"></div>
+
+        <!-- Sección Productos -->
+        <div id="productos" class="tab-content active">
+            <h2>Gestión de Productos</h2>
+            <form method="POST" action="{% url 'guardar_producto' %}" id="form-producto">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="producto-marca">Marca</label>
+                    <select id="producto-marca" required>
+                        <option value="">Seleccione una marca</option>
+                        {% for marca in marcas %}
+                            <option value="{{ marca.id }}">{{ marca.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="producto-modelo">Modelo</label>
+                    <select id="producto-modelo" required name="modelo">
+                        <option value="">Primero seleccione una marca</option>
+                        <!-- Los modelos se cargarán dinámicamente con JavaScript -->
+                    </select>
+                </div>
+                
+                <!-- Selector de colores en tabla -->
+                <div class="form-group">
+                    <label>Seleccione los colores disponibles</label>
+                    <div class="colores-container">
+                        <div class="filtro-colores">
+                            <input type="text" id="filtro-colores" placeholder="Filtrar colores..." style="padding: 8px; width: 100%; margin-bottom: 10px;">
+                        </div>
+                        <table class="tabla-colores">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">Seleccionar</th>
+                                    <th>Color</th>
+                                    <th>Código</th>   
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-body-colores">
+                                {% for color in colores %}
+                                    <tr>
+                                        <td style="text-align: center;">
+                                            <input type="checkbox" class="color-checkbox" value="{{ color.id }}" 
+                                                   data-color="{{ color.nombre }}">
+                                        </td>
+                                        <td>{{ color.nombre }}</td>
+                                        <td>
+                                            <div class="color-preview" style="background-color: {{ color.codigo_hex }};"></div>
+                                            {{ color.codigo_hex }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <input type="hidden" id="colores-seleccionados" name="colores">
+                </div>
+                
+                <!-- Selector de tallas en tabla -->
+                <div class="form-group">
+                    <label>Seleccione las tallas disponibles</label>
+                    <div class="tallas-container">
+                        <div class="filtro-tallas">
+                            <input type="text" id="filtro-tallas" placeholder="Filtrar tallas..." style="padding: 8px; width: 100%; margin-bottom: 10px;">
+                        </div>
+                        <table class="tabla-tallas">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">Seleccionar</th>
+                                    <th>Talla</th>
+                                    <th>Tipo</th>   
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-body-tallas">
+                                <!-- Las tallas se cargarán dinámicamente con JavaScript -->
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">Cargando tallas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <input type="hidden" id="tallas-seleccionadas" name="tallas">
+                </div>
+                
+                <div class="form-group">
+                    <label for="producto-precio">Precio</label>
+                    <input name="precio" type="number" id="producto-precio" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="producto-precio-descuento">Precio de descuento (opcional)</label>
+                    <input name="descuento" type="number" id="producto-precio-descuento" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="producto-stock">Estado de stock</label>
+                    <select id="producto-stock" required name="stock">
+                        <option value="0">Disponible</option>
+                        <option value="1">Pocas Unidades</option>
+                        <option value="2">No Disponible</option>
+                        <option value="3">Próximamente</option>
+                    </select>
+                </div>
+                <button type="submit">Guardar Producto</button>
+            </form>
+            
+            <h3>Productos Existentes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Color</th>
+                        <th>Talla</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-productos">
+                    <!-- Los datos se cargarán con JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+    // Código de marcas y modelos
+    const marcaSelect = document.getElementById('producto-marca');
+    const modeloSelect = document.getElementById('producto-modelo');
+    
+    marcaSelect.addEventListener('change', function() {
+        const marcaId = this.value;
+        modeloSelect.innerHTML = '<option value="">Cargando modelos...</option>';
+        modeloSelect.disabled = true;
+        
+        if (marcaId) {
+            fetch(`/obtener-modelos/${marcaId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    modeloSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+                    data.forEach(modelo => {
+                        const option = document.createElement('option');
+                        option.value = modelo.id;
+                        option.textContent = modelo.nombre;
+                        modeloSelect.appendChild(option);
+                    });
+                    modeloSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    modeloSelect.innerHTML = '<option value="">Error al cargar modelos</option>';
+                });
+        } else {
+            modeloSelect.innerHTML = '<option value="">Primero seleccione una marca</option>';
+            modeloSelect.disabled = true;
+        }
+    });
+
+    // Cargar tallas
+    cargarTallas();
+
+    // Configurar filtros
+    const filtroColores = document.getElementById('filtro-colores');
+    filtroColores.addEventListener('input', filtrarColores);
+
+    const filtroTallas = document.getElementById('filtro-tallas');
+    filtroTallas.addEventListener('input', filtrarTallas);
+
+    // Manejo del formulario
+    const form = document.getElementById('form-producto');
+    form.addEventListener('submit', function(e) {
+        // Verificar que al menos un color esté seleccionado
+        const coloresSeleccionados = obtenerIdsColoresSeleccionados();
+        if (coloresSeleccionados.length === 0) {
+            e.preventDefault();
+            mostrarAlerta('Por favor, seleccione al menos un color', 'error');
+            return false;
+        }
+        
+        // Verificar que al menos una talla esté seleccionada
+        const tallasSeleccionadas = obtenerIdsTallasSeleccionadas();
+        if (tallasSeleccionadas.length === 0) {
+            e.preventDefault();
+            mostrarAlerta('Por favor, seleccione al menos una talla', 'error');
+            return false;
+        }
+        
+        // Actualizar campos ocultos antes de enviar
+        actualizarColoresOcultos();
+        actualizarTallasOcultas();
+        
+        return true;
+    });
+});
+
+// Funciones para colores
+function filtrarColores() {
+    const filtro = document.getElementById('filtro-colores').value.toLowerCase();
+    const filas = document.querySelectorAll('#tabla-body-colores tr');
+    
+    filas.forEach(fila => {
+        const textoFila = fila.textContent.toLowerCase();
+        if (textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+function obtenerIdsColoresSeleccionados() {
+    const checkboxes = document.querySelectorAll('.color-checkbox:checked');
+    const ids = [];
+    checkboxes.forEach(checkbox => {
+        ids.push(checkbox.value);
+    });
+    return ids;
+}
+
+function actualizarColoresOcultos() {
+    const ids = obtenerIdsColoresSeleccionados();
+    document.getElementById('colores-seleccionados').value = ids.join(',');
+}
+
+// Funciones para tallas (mantener las existentes)
+function cargarTallas() {
+    fetch('/obtener-tallas/')
+        .then(response => response.json())
+        .then(data => {
+            const tablaBody = document.getElementById('tabla-body-tallas');
+            tablaBody.innerHTML = '';
+            
+            data.forEach(talla => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="talla-checkbox" value="${talla.id}" 
+                               data-talla="${talla.valor}" data-categoria="${talla.tipo || 'N/A'}">
+                    </td>
+                    <td>${talla.valor}</td>
+                    <td>${talla.tipo || 'N/A'}</td>
+                `;
+                tablaBody.appendChild(fila);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-body-tallas').innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; color: red;">
+                        Error al cargar las tallas
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function filtrarTallas() {
+    const filtro = document.getElementById('filtro-tallas').value.toLowerCase();
+    const filas = document.querySelectorAll('#tabla-body-tallas tr');
+    
+    filas.forEach(fila => {
+        const textoFila = fila.textContent.toLowerCase();
+        if (textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+function obtenerIdsTallasSeleccionadas() {
+    const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
+    const ids = [];
+    checkboxes.forEach(checkbox => {
+        ids.push(checkbox.value);
+    });
+    return ids;
+}
+
+function actualizarTallasOcultas() {
+    const ids = obtenerIdsTallasSeleccionadas();
+    document.getElementById('tallas-seleccionadas').value = ids.join(',');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ MANTIENE ESTO (tu código actual de marcas y modelos)
+    const marcaSelect = document.getElementById('producto-marca');
+    const modeloSelect = document.getElementById('producto-modelo');
+    
+    marcaSelect.addEventListener('change', function() {
+        const marcaId = this.value;
+        modeloSelect.innerHTML = '<option value="">Cargando modelos...</option>';
+        modeloSelect.disabled = true;
+        
+        if (marcaId) {
+            fetch(`/obtener-modelos/${marcaId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    modeloSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+                    data.forEach(modelo => {
+                        const option = document.createElement('option');
+                        option.value = modelo.id;
+                        option.textContent = modelo.nombre;
+                        modeloSelect.appendChild(option);
+                    });
+                    modeloSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    modeloSelect.innerHTML = '<option value="">Error al cargar modelos</option>';
+                });
+        } else {
+            modeloSelect.innerHTML = '<option value="">Primero seleccione una marca</option>';
+            modeloSelect.disabled = true;
+        }
+    });
+
+    // ✅ MANTIENE ESTO (tu función de cargar tallas)
+    cargarTallas();
+
+    // ✅ AGREGA ESTO NUEVO (manejo del formulario)
+    const form = document.getElementById('form-producto');
+    form.addEventListener('submit', function(e) {
+        // Verificar que al menos una talla esté seleccionada
+        const tallasSeleccionadas = obtenerIdsTallasSeleccionadas();
+        if (tallasSeleccionadas.length === 0) {
+            e.preventDefault();
+            alert('Por favor, seleccione al menos una talla');
+            return false;
+        }
+        
+        // Actualizar el campo oculto antes de enviar
+        actualizarTallasOcultas();
+        
+        return true;
+    });
+});
+
+// ✅ MANTIENE ESTO (tu función cargarTallas)
+function cargarTallas() {
+    console.log('Cargando tallas...');
+    fetch('/obtener-tallas/')
+        .then(response => response.json())
+        .then(data => {
+            const tablaBody = document.getElementById('tabla-body-tallas');
+            tablaBody.innerHTML = '';
+            
+            data.forEach(talla => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="talla-checkbox" value="${talla.id}" 
+                               data-talla="${talla.valor}" data-categoria="${talla.tipo || 'N/A'}">
+                    </td>
+                    <td>${talla.valor}</td>
+                    <td>${talla.tipo || 'N/A'}</td>
+                `;
+                tablaBody.appendChild(fila);
+            });
+            
+            // ✅ MANTIENE ESTO (tu filtro de tallas)
+            const filtroTallas = document.getElementById('filtro-tallas');
+            filtroTallas.addEventListener('input', filtrarTallas);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-body-tallas').innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; color: red;">
+                        Error al cargar las tallas
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+// ✅ MANTIENE ESTO (tu función filtrarTallas)
+function filtrarTallas() {
+    const filtro = document.getElementById('filtro-tallas').value.toLowerCase();
+    const filas = document.querySelectorAll('#tabla-body-tallas tr');
+    
+    filas.forEach(fila => {
+        const textoFila = fila.textContent.toLowerCase();
+        if (textoFila.includes(filtro)) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+}
+
+// ✅ MANTIENE ESTO (tu función obtenerTallasSeleccionadas)
+function obtenerTallasSeleccionadas() {
+    const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
+    const tallasSeleccionadas = [];
+    
+    checkboxes.forEach(checkbox => {
+        tallasSeleccionadas.push({
+            id: checkbox.value,
+            nombre: checkbox.getAttribute('data-talla'),
+            categoria: checkbox.getAttribute('data-categoria')
+        });
+    });
+    
+    return tallasSeleccionadas;
+}
+
+// ✅ AGREGA ESTAS 2 FUNCIONES NUEVAS
+function obtenerIdsTallasSeleccionadas() {
+    const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
+    const ids = [];
+    
+    checkboxes.forEach(checkbox => {
+        ids.push(checkbox.value);
+    });
+    
+    return ids;
+}
+
+function actualizarTallasOcultas() {
+    const ids = obtenerIdsTallasSeleccionadas();
+    document.getElementById('tallas-seleccionadas').value = ids.join(',');
+}
+
+// Función para cargar y mostrar los productos existentes
+function cargarProductos() {
+    fetch('/obtener-productos/')
+        .then(response => response.json())
+        .then(data => {
+            const tablaProductos = document.getElementById('tabla-productos');
+            tablaProductos.innerHTML = '';
+            
+            if (data.length === 0) {
+                tablaProductos.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center;">
+                            No hay productos registrados
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            data.forEach(producto => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td>${producto.marca || 'N/A'}</td>
+                    <td>${producto.modelo || 'N/A'}</td>
+                    <td>${producto.color || 'N/A'}</td>
+                    <td>${producto.talla || 'N/A'}</td>
+                    <td>$${producto.precio || '0.00'}</td>
+                    <td>${obtenerEstadoStock(producto.stock)}</td>
+                    <td>
+                        <button class="btn-editar" data-id="${producto.id}">Editar</button>
+                        <button class="btn-eliminar" data-id="${producto.id}">Eliminar</button>
+                    </td>
+                `;
+                tablaProductos.appendChild(fila);
+            });
+            
+            // Agregar event listeners para los botones de editar y eliminar
+            agregarEventListenersBotones();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tabla-productos').innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: red;">
+                        Error al cargar los productos
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+// Función para convertir el valor numérico de stock a texto
+function obtenerEstadoStock(valorStock) {
+    const estados = {
+        0: 'Disponible',
+        1: 'Pocas Unidades',
+        2: 'No Disponible',
+        3: 'Próximamente'
+    };
+    return estados[valorStock] || 'Desconocido';
+}
+
+// Función para agregar event listeners a los botones de editar y eliminar
+function agregarEventListenersBotones() {
+    // Botones de editar
+    document.querySelectorAll('.btn-editar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productoId = this.getAttribute('data-id');
+            editarProducto(productoId);
+        });
+    });
+    
+    // Botones de eliminar
+    document.querySelectorAll('.btn-eliminar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productoId = this.getAttribute('data-id');
+            eliminarProducto(productoId);
+        });
+    });
+}
+
+// Función para editar un producto (debes implementarla según tus necesidades)
+function editarProducto(id) {
+    // Redireccionar a la página de edición del producto
+    window.location.href = '/editar-producto/' + id + '/';
+}
+
+// Función para eliminar un producto
+function eliminarProducto(id) {
+    if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+        fetch(`/eliminar-producto/${id}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarAlerta('Producto eliminado correctamente', 'success');
+                cargarProductos(); // Recargar la tabla
+            } else {
+                mostrarAlerta('Error al eliminar el producto', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarAlerta('Error al eliminar el producto', 'error');
+        });
+    }
+}
+
+// Función para obtener el token CSRF
+function getCSRFToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    return cookieValue;
+}
+
+// Función para mostrar alertas
+function mostrarAlerta(mensaje, tipo) {
+    const alertBox = document.getElementById('alert-box');
+    alertBox.textContent = mensaje;
+    alertBox.className = `alert ${tipo}`;
+    alertBox.style.display = 'block';
+    
+    setTimeout(() => {
+        alertBox.style.display = 'none';
+    }, 3000);
+}
+
+// Llamar a cargarProductos cuando el documento esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    cargarProductos();
+    
+    // También recargar productos después de guardar uno nuevo
+    const form = document.getElementById('form-producto');
+    form.addEventListener('submit', function() {
+        // Esperar un momento para que el servidor procese la solicitud
+        setTimeout(() => {
+            cargarProductos();
+        }, 500);
+    });
+});
+    </script>
+</body>
+</html>

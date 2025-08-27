@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Marca - Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>Editar Marca</h1>
+                <a href="{% url 'gestion_marcas' %}" class="btn-back">← Volver a Marcas</a>
+            </div>
+        </div>
+    </header>
+    {% if messages %}
+    {% for message in messages %}
+        <div  class="alerta">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <div class="alert" id="alert-box" style="display: none;"></div>
+
+        <form method="POST" action="{% url 'actualizar_marca' marca_id=marca.id %}" id="form-editar-marca">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="marca-nombre">Nombre de la Marca</label>
+                <input type="text" id="marca-nombre" name="nombre" value="{{ marca.nombre }}" required>
+            </div>
+            
+            <!-- Selector de tipos de producto -->
+            <div class="form-group">
+                <label>Seleccione los tipos de producto asociados</label>
+                <div class="tipos-container">
+                    <div class="filtro-tipos">
+                        <input type="text" id="filtro-tipos" placeholder="Filtrar tipos..." style="padding: 8px; width: 100%;">
+                    </div>
+                    <table class="tabla-tipos">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">Seleccionar</th>
+                                <th>Tipo de Producto</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-body-tipos">
+                            {% for tipo in tipos %}
+                                <tr class="{% if tipo in marca.tipoProducto.all %}tipo-seleccionado{% endif %}">
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" class="tipo-checkbox" value="{{ tipo.id }}" 
+                                            data-tipo="{{ tipo.nombre }}"
+                                            {% if tipo in marca.tipoProducto.all %}checked{% endif %}>
+                                    </td>
+                                    <td>{{ tipo.nombre }}</td>
+                                    <td>{{ tipo.descripcion|default:"-" }}</td>
+                                    <td>
+                                        {% if tipo.activo %}
+                                            <span style="color: green;">Activo</span>
+                                        {% else %}
+                                            <span style="color: red;">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <input type="hidden" id="tipos-seleccionados" name="tipos_ids" value="{% for tipo in marca.tipoProducto.all %}{{ tipo.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            </div>
+            
+            <div class="form-group">
+                <label for="marca-descripcion">Descripción (opcional)</label>
+                <textarea id="marca-descripcion" name="descripcion">{{ marca.descripcion }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="marca-activo">Estado</label>
+                <select id="marca-activo" name="activo">
+                    <option value="True" {% if marca.activo %} {% endif %} >Activo</option>
+                    <option value="False" {% if not marca.activo %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            
+            <button type="submit">Actualizar Marca</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filtro de tipos
+            const filtroTipos = document.getElementById('filtro-tipos');
+            filtroTipos.addEventListener('input', function() {
+                const filtro = this.value.toLowerCase();
+                const filas = document.querySelectorAll('#tabla-body-tipos tr');
+                
+                filas.forEach(fila => {
+                    const textoFila = fila.textContent.toLowerCase();
+                    if (textoFila.includes(filtro)) {
+                        fila.style.display = '';
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Actualizar checkboxes de tipos
+            document.querySelectorAll('.tipo-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    actualizarTiposOcultos();
+                    // Resaltar fila seleccionada
+                    if (this.checked) {
+                        this.closest('tr').classList.add('tipo-seleccionado');
+                    } else {
+                        this.closest('tr').classList.remove('tipo-seleccionado');
+                    }
+                });
+            });
+            
+            // Manejo del formulario
+            const form = document.getElementById('form-editar-marca');
+            form.addEventListener('submit', function(e) {
+                // Verificar que al menos un tipo esté seleccionado
+                const tiposSeleccionados = obtenerIdsTiposSeleccionados();
+                if (tiposSeleccionados.length === 0) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, seleccione al menos un tipo de producto', 'error');
+                    return false;
+                }
+                
+                // Actualizar campo oculto antes de enviar
+                actualizarTiposOcultos();
+                
+                return true;
+            });
+        });
+        
+        function obtenerIdsTiposSeleccionados() {
+            const checkboxes = document.querySelectorAll('.tipo-checkbox:checked');
+            const ids = [];
+            checkboxes.forEach(checkbox => {
+                ids.push(checkbox.value);
+            });
+            return ids;
+        }
+        
+        function actualizarTiposOcultos() {
+            const ids = obtenerIdsTiposSeleccionados();
+            document.getElementById('tipos-seleccionados').value = ids.join(',');
+        }
+        
+        function mostrarAlerta(mensaje, tipo) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.textContent = mensaje;
+            alertBox.className = `alert ${tipo}`;
+            alertBox.style.display = 'block';
+            
+            // Desplazarse hacia la alerta
+            alertBox.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

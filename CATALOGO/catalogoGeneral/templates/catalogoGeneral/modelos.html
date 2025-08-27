@@ -1,0 +1,256 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <div class="header-content">
+                <h1>Gestión de Catálogo</h1>
+            </div>
+
+            {% if user.is_authenticated %}
+            <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+            {% endif %}
+        </div>
+    </header>
+    {% if messages %}
+    {% for message in messages %}
+        <div  class="alerta">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <ul class="nav-tabs">
+            <li><a href="{% url 'gestion_marcas' %}" class="tab-link">Marcas</a></li>
+            <li><a href="{% url 'gestion_modelos' %}" class="tab-link active">Modelos</a></li>
+            <li><a href="{% url 'gestion_colores' %}" class="tab-link">Colores</a></li>
+            <li><a href="{% url 'gestion_tallas' %}" class="tab-link">Tallas</a></li>
+            <li><a href="{% url 'gestion_productos' %}" class="tab-link">Productos</a></li>
+        </ul>
+        
+        <div class="alert" id="alert-box" style="display: none;"></div>
+        
+        <!-- Sección Modelos -->
+        <div class="tab-content active">
+            <h2>Gestión de Modelos</h2>
+            
+            <!-- Formulario Django para Modelos -->
+            <form method="POST" action="{% url 'guardar_modelo' %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_marca">Marca</label>
+                    <select name="marca" id="id_marca" required onchange="cargarTiposPorMarca()">
+                        <option value="">Seleccione una marca</option>
+                        {% for marca in marcas %}
+                            <option value="{{ marca.id }}" {% if form.marca.value == marca.id %}selected{% endif %}>
+                                {{ marca.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.marca.errors %}
+                        <div class="error">{{ form.marca.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label>Tipos de Producto Disponibles para esta Marca</label>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center;">Seleccionar</th>
+                                    <th>Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-body-tipos">
+                                <tr>
+                                    <td colspan="2" style="text-align: center;">
+                                        Primero seleccione una marca
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <input type="hidden" id="tipos-seleccionados" name="tipos_seleccionados">
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_nombre">Nombre del Modelo</label>
+                    <input type="text" name="nombre" id="id_nombre" value="{{ form.nombre.value|default:'' }}" required>
+                    {% if form.nombre.errors %}
+                        <div class="error">{{ form.nombre.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_descripcion">Descripción (opcional)</label>
+                    <textarea name="descripcion" id="id_descripcion">{{ form.descripcion.value|default:'' }}</textarea>
+                    {% if form.descripcion.errors %}
+                        <div class="error">{{ form.descripcion.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <button type="submit">Guardar Modelo</button>
+            </form>
+            
+            <h3>Modelos Existentes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Marca</th>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for modelo in modelos %}
+                    <tr>
+                        <td>{{ modelo.id }}</td>
+                        <td>{{ modelo.marca.nombre }}</td>
+                        <td>{{ modelo.nombre }}</td>
+                        <td>
+                            {% for tipo in modelo.tipoProducto.all %}
+                                <span class="badge">{{ tipo.nombre }}</span>{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                <span class="text-muted">Sin tipos asignados</span>
+                            {% endfor %}
+                        </td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="editarModelo({{modelo.id}})" data-id="{{ modelo.id }}">Editar</button>
+                            <button class="btn-delete" onclick=eliminarModelo({{ modelo.id }}) data-id="{{ modelo.id }}">Eliminar</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No hay modelos registrados</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+
+        function editarModelo(id) {
+            // Construye la URL usando la URL de Django
+            window.location.href = "{% url 'editar_modelo' 0 %}".replace('0', id);
+        }
+        
+        // Función para eliminar (ejemplo)
+        function eliminarModelo(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este modelo?')) {
+                // Aquí iría la lógica para eliminar
+               window.location.href = "{% url 'eliminar_modelo' 0 %}".replace('0', id);
+            }
+        }
+        // Función para cargar los tipos de producto según la marca seleccionada
+        function cargarTiposPorMarca() {
+            const marcaId = document.getElementById('id_marca').value;
+            const tablaBody = document.getElementById('tabla-body-tipos');
+            
+            if (!marcaId) {
+                tablaBody.innerHTML = `
+                    <tr>
+                        <td colspan="2" style="text-align: center;">
+                            Primero seleccione una marca
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Mostrar mensaje de carga
+            tablaBody.innerHTML = `
+                <tr>
+                    <td colspan="2" style="text-align: center;">
+                        Cargando tipos disponibles...
+                    </td>
+                </tr>
+            `;
+            
+            // Hacer petición AJAX para obtener los tipos de la marca seleccionada
+            fetch(`/obtener_tipos_por_marca/${marcaId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    console.log(data.tipos);
+                    console.log(data.tipos.length);
+                    tablaBody.innerHTML = '';
+                    
+                    if (data.tipos && data.tipos.length > 0) {
+                        data.tipos.forEach(tipo => {
+                            const fila = document.createElement('tr');
+                            fila.innerHTML = `
+                                <td style="text-align: center;">
+                                    <input type="checkbox" class="tipo-checkbox" value="${tipo.id}">
+                                </td>
+                                <td>${tipo.nombre}</td>
+                            `;
+                            tablaBody.appendChild(fila);
+                        });
+                        
+                        // Añadir event listeners a los checkboxes
+                        const checkboxes = document.querySelectorAll('.tipo-checkbox');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', actualizarTiposSeleccionados);
+                        });
+                    } else {
+                        tablaBody.innerHTML = `
+                            <tr>
+                                <td colspan="2" style="text-align: center;">
+                                    Esta marca no tiene tipos de producto asociados
+                                </td>
+                            </tr>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    tablaBody.innerHTML = `
+                        <tr>
+                            <td colspan="2" style="text-align: center; color: red;">
+                                Error al cargar los tipos de producto
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+        
+        // Función para actualizar el campo oculto con los tipos seleccionados
+        function actualizarTiposSeleccionados() {
+            const checkboxes = document.querySelectorAll('.tipo-checkbox:checked');
+            const ids = [];
+            checkboxes.forEach(checkbox => {
+                ids.push(checkbox.value);
+            });
+            document.getElementById('tipos-seleccionados').value = ids.join(',');
+        }
+        
+        // Añadir evento al formulario para asegurar que se actualicen los tipos seleccionados antes de enviar
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                actualizarTiposSeleccionados();
+            });
+            
+            // Cargar tipos si ya hay una marca seleccionada (en caso de edición)
+            const marcaSelect = document.getElementById('id_marca');
+            if (marcaSelect.value) {
+                cargarTiposPorMarca();
+            }
+        });
+    </script>
+</body>
+</html>

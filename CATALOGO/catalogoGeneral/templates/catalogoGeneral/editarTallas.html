@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Talla - Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>Editar Talla</h1>
+                <a href="{% url 'gestion_tallas' %}" class="btn-back">← Volver a Tallas</a>
+            </div>
+        </div>
+    </header>
+    {% if messages %}
+    {% for message in messages %}
+        <div  class="alerta">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% endif %}
+    <div class="container">
+        <div class="alert" id="alert-box" style="display: none;"></div>
+
+        <div class="talla-form">
+            <form method="POST" action="{% url 'actualizar_talla' talla_id=talla.id %}" id="form-editar-talla">
+                {% csrf_token %}
+                
+                <div class="tipo-talla-info">
+                    <strong>Tipo de Talla:</strong> {{ talla.get_tipo_display }}<br>
+                    <small>El tipo de talla no puede modificarse una vez creada.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="talla-valor">Valor de la Talla</label>
+                    <input type="text" id="talla-valor" name="valor" value="{{ talla.valor }}" required>
+                    <small>Ejemplo: Para tallas numéricas: "38", "40"; Para letras: "S", "M", "L"</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="talla-orden">Orden de Visualización</label>
+                    <input type="number" id="talla-orden" name="orden" value="{{ talla.orden }}" min="0" required>
+                    <div class="orden-info">
+                        Las tallas se ordenarán de menor a mayor según este valor. 
+                        Útil para mostrar las tallas en el orden correcto en los selectores.
+                    </div>
+                </div>
+                
+                <button type="submit">Actualizar Talla</button>
+            </form>
+            
+            <!-- Sección de productos asociados -->
+            <div class="productos-asociados">
+                <h3>Productos que usan esta talla</h3>
+                <div class="productos-lista">
+                    {% if productos_asociados %}
+                        {% for producto in productos_asociados %}
+                            <div class="producto-item">
+                                <strong>{{ producto.modelo.marca.nombre }} - {{ producto.modelo.nombre }}</strong>
+                                <br>
+                                <small>
+                                    Colores: {{ producto.colores.all|join:", " }} | 
+                                    Precio: ${{ producto.precio }} |
+                                    Stock: {{ producto.stock }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="sin-productos">Esta talla no está asociada a ningún producto.</p>
+                    {% endif %}
+                </div>
+                {% if productos_asociados %}
+                    <p><small>Nota: No se puede eliminar una talla que está en uso por productos activos.</small></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Validación del formulario
+            const form = document.getElementById('form-editar-talla');
+            form.addEventListener('submit', function(e) {
+                // Validar valor de talla
+                const valor = document.getElementById('talla-valor').value.trim();
+                if (!valor) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, ingrese un valor para la talla', 'error');
+                    return false;
+                }
+                
+                // Validar orden
+                const orden = document.getElementById('talla-orden').value;
+                if (orden === '' || parseInt(orden) < 0) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, ingrese un valor de orden válido (número positivo)', 'error');
+                    return false;
+                }
+                
+                return true;
+            });
+        });
+        
+        function mostrarAlerta(mensaje, tipo) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.textContent = mensaje;
+            alertBox.className = `alert ${tipo}`;
+            alertBox.style.display = 'block';
+            
+            // Desplazarse hacia la alerta
+            alertBox.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

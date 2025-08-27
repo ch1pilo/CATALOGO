@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Color - Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+    
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>Editar Color</h1>
+                <a href="{% url 'gestion_colores' %}" class="btn-back">← Volver a Colores</a>
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+    {% for message in messages %}
+        <div  class="alerta">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <div class="alert" id="alert-box" style="display: none;"></div>
+
+        <div class="color-form">
+            <form method="POST" action="{% url 'actualizar_color' color_id=color.id %}" id="form-editar-color">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="color-nombre">Nombre del Color</label>
+                    <input type="text" id="color-nombre" name="nombre" value="{{ color.nombre }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="color-codigo">Código HEX</label>
+                    <div class="color-hex-input">
+                        <input type="color" id="color-picker" value="{{ color.codigo_hex }}" 
+                               onchange="actualizarHexDesdePicker()">
+                        <input type="text" id="color-codigo" name="codigo_hex" value="{{ color.codigo_hex }}" 
+                               pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$" 
+                               placeholder="#FFFFFF" required>
+                        <div class="color-preview" id="color-preview" 
+                             style="background-color: {{ color.codigo_hex }};"></div>
+                    </div>
+                    <small>Formato: #FFFFFF o #FFF</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="color-activo">Estado</label>
+                    <select id="color-activo" name="activo">
+                        <option value="1" {% if color.activo %}selected{% endif %}>Activo</option>
+                        <option value="0" {% if not color.activo %}selected{% endif %}>Inactivo</option>
+                    </select>
+                </div>
+                
+                <button type="submit">Actualizar Color</button>
+            </form>
+            
+            <!-- Sección de productos asociados -->
+            <div class="productos-asociados">
+                <h3>Productos que usan este color</h3>
+                <div class="productos-lista">
+                    {% if productos_asociados %}
+                        {% for producto in productos_asociados %}
+                            <div class="producto-item">
+                                <strong>{{ producto.modelo.marca.nombre }} - {{ producto.modelo.nombre }}</strong>
+                                <br>
+                                <small>
+                                    Tallas: {{ producto.tallas.all|join:", " }} | 
+                                    Precio: ${{ producto.precio }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="sin-productos">Este color no está asociado a ningún producto.</p>
+                    {% endif %}
+                </div>
+                {% if productos_asociados %}
+                    <p><small>Nota: No se puede desactivar un color que está en uso por productos activos.</small></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Actualizar preview cuando cambia el código HEX
+            document.getElementById('color-codigo').addEventListener('input', function() {
+                actualizarPreviewDesdeHex();
+            });
+            
+            // Validación del formulario
+            const form = document.getElementById('form-editar-color');
+            form.addEventListener('submit', function(e) {
+                // Validar formato HEX
+                const hexInput = document.getElementById('color-codigo');
+                const hexValue = hexInput.value.trim();
+                const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+                
+                if (!hexRegex.test(hexValue)) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, ingrese un código HEX válido (ej: #FFFFFF o #FFF)', 'error');
+                    hexInput.focus();
+                    return false;
+                }
+                
+                // Validar nombre
+                const nombre = document.getElementById('color-nombre').value.trim();
+                if (!nombre) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, ingrese un nombre para el color', 'error');
+                    return false;
+                }
+                
+                return true;
+            });
+        });
+        
+        function actualizarHexDesdePicker() {
+            const picker = document.getElementById('color-picker');
+            const hexInput = document.getElementById('color-codigo');
+            hexInput.value = picker.value.toUpperCase();
+            actualizarPreviewDesdeHex();
+        }
+        
+        function actualizarPreviewDesdeHex() {
+            const hexInput = document.getElementById('color-codigo');
+            const preview = document.getElementById('color-preview');
+            preview.style.backgroundColor = hexInput.value;
+        }
+        
+        function mostrarAlerta(mensaje, tipo) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.textContent = mensaje;
+            alertBox.className = `alert ${tipo}`;
+            alertBox.style.display = 'block';
+            
+            // Desplazarse hacia la alerta
+            alertBox.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

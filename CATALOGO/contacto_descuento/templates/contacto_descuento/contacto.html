@@ -1,0 +1,213 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacto - EmpiShoes</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        .contact-hero {
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.4)), 
+                        url('{% static "img/contacto.jpg" %}') center/cover no-repeat;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header con navegación -->
+    <header>
+        <div class="header-container">
+            <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
+            <nav>
+                <ul>
+                    <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
+                    <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                    <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
+                    <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
+                    <li><a href="#" class="active">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Banner principal de contacto -->
+    <div class="container">
+        <div class="contact-hero">
+            <div class="contact-hero-content">
+                <h1>Contáctanos</h1>
+                <p>Estamos aquí para ayudarte. Escríbenos y te responderemos a la brevedad.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <main class="container">
+        <div class="contact-container">
+            <!-- Información de contacto -->
+            <div class="contact-info">
+                <h2>Información de Contacto</h2> 
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="info-content">
+                        <h3>Teléfonos</h3>
+                        <p>+58 (412) 797-1189</p>
+                        <p>+58 (412) 980-5112</p>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="info-content">
+                        <h3>Email</h3>
+                        <p>info@empishoes.com</p>
+                        <p>soporte@empishoes.com</p>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="info-content">
+                        <h3>Horario de Atención</h3>
+                        <p>Lunes a Viernes: 9:00 - 18:00</p>
+                        <p>Sábados: 10:00 - 16:00</p>
+                        <p>Domingos: Cerrado</p>
+                    </div>
+                </div>
+                
+                <div class="social-links">
+
+                    <a href="https://www.tiktok.com/@empishoes_ve" class="social-link">
+                        <i class="fab fa-tiktok"></i>
+                    </a>
+
+                    <a href="https://www.facebook.com/100086057366749" class="social-link">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="https://www.instagram.com/empishoes.ve?igsh=cjZmejBwaXFtbnp5" class="social-link">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://t.me/empishoes" class="social-link">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                    <a href="https://wa.me/+584126505112" class="social-link">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Formulario de contacto -->
+            <div class="contact-form">
+                <h2>Envíanos un Mensaje</h2>
+                <form id="contactForm" method="POST" action="{% url 'mensaje_wasap' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="name">Nombre completo *</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                                        
+                    <div class="form-group">
+                        <label for="phone">Teléfono</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subject">Asunto *</label>
+                        <select id="subject" name="subject" required>
+                            <option value="">Selecciona un asunto</option>
+                            <option value="consulta">Consulta general</option>
+                            <option value="soporte">Soporte técnico</option>
+                            <option value="ventas">Información de ventas</option>
+                            <option value="devolucion">Devoluciones</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="message">Mensaje *</label>
+                        <textarea id="message" name="message" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit">Enviar Mensaje</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Mapa de ubicación -->
+        <div class="map-container">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62759.85723940863!2d-71.7331335192807!3d10.540691467673076!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e89916a00cf5d59%3A0x241a7f966544e2f7!2sUrbanizacion%20El%20caujaro%2C%20Maracaibo%204004%2C%20Zulia!5e0!3m2!1ses!2sve!4v1756258887855!5m2!1ses!2sve" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>EMPI Shoes</h3>
+                <p>La mejor selección de zapatos, ropa y accesorios con las últimas tendencias y marcas exclusivas.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Enlaces Rápidos</h3>
+                <ul>
+                    <li><a href="https://ch1pilo.github.io/EMPISHOES/#about">Sobre Nosotros</a></li>
+                    <li><a href="https://ch1pilo.github.io/EMPISHOES/#testimonios">Testimonios</a></li>
+                    <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
+                    <li><a href="{% url 'politica_privacidad' %}">Política de Privacidad</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <ul>
+                    <li>Email: info@empishoes.com</li>
+                    <li>Teléfono: +58 (412) 797-1189</li>
+                    <li>Dirección: Venezuela, Zulia, maracaibo, El Caujuaro</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            &copy; 2023 EMPI Shoes. Todos los derechos reservados.
+        </div>
+    </footer>
+<!-- Al final de tu contacto.html, antes de </body> -->
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    // Enviar con AJAX
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'  // Marcar como AJAX
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('¡Gracias por tu mensaje! Te responderemos pronto.');
+            // Abrir WhatsApp - esto funcionará porque es después de una acción del usuario
+            window.open(data.url_wasap, '_blank');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Si falla AJAX, enviar el formulario normalmente
+        this.submit();
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidad - EmpiShoes</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
+    <style>
+        .legal-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .legal-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .legal-section {
+            margin-bottom: 25px;
+        }
+        .legal-section h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        p{
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
+            <nav>
+                <ul>
+                    <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
+                    <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                    <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
+                    <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
+                    <li><a href="{% url 'contacto' %}">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="legal-container">
+            <div class="legal-header">
+                <h1>Política de Privacidad</h1>
+                <p>Última actualización: {% now "d M Y" %}</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>1. Información que Recopilamos</h2>
+                <p>Recopilamos información que usted nos proporciona directamente, incluyendo:</p>
+                <ul>
+                    <li>Nombre y apellido</li>
+                    <li>Dirección de correo electrónico</li>
+                    <li>Dirección de envío</li>
+                    <li>Número de teléfono</li>
+                    <li>Información de pago</li>
+                </ul>
+            </div>
+
+            <div class="legal-section">
+                <h2>2. Uso de la Información</h2>
+                <p>Utilizamos su información para:</p>
+                <ul>
+                    <li>Procesar y enviar sus pedidos</li>
+                    <li>Comunicarnos con usted sobre su cuenta</li>
+                    <li>Enviar información promocional (solo si opta por recibirla)</li>
+                    <li>Mejorar nuestros productos y servicios</li>
+                </ul>
+            </div>
+
+            <div class="legal-section">
+                <h2>3. Protección de Datos</h2>
+                <p>Implementamos medidas de seguridad técnicas y organizativas para proteger sus datos personales contra accesos no autorizados y pérdidas.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>4. Cookies</h2>
+                <p>Utilizamos cookies para mejorar su experiencia en nuestro sitio web. Puede configurar su navegador para rechazar cookies, pero esto puede afectar la funcionalidad del sitio.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>5. Compartir Información</h2>
+                <p>No vendemos ni alquilamos su información personal a terceros. Solo compartimos información con:</p>
+                <ul>
+                    <li>Proveedores de servicios de pago</li>
+                    <li>Compañías de envío</li>
+                    <li>Cuando es requerido por ley</li>
+                </ul>
+            </div>
+
+            <div class="legal-section">
+                <h2>6. Sus Derechos</h2>
+                <p>Usted tiene derecho a:</p>
+                <ul>
+                    <li>Acceder a sus datos personales</li>
+                    <li>Solicitar la corrección de datos inexactos</li>
+                    <li>Solicitar la eliminación de sus datos</li>
+                    <li>Oponerse al procesamiento de sus datos</li>
+                </ul>
+            </div>
+
+            <div class="legal-section">
+                <h2>7. Cambios en esta Política</h2>
+                <p>Nos reservamos el derecho de modificar esta política de privacidad en cualquier momento. Los cambios serán publicados en esta página.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>8. Contacto</h2>
+                <p>Para ejercer sus derechos o hacer preguntas sobre esta política, contáctenos en: privacidad@empishoes.com</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+</body>
+</html>

@@ -1,0 +1,773 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Ropas - EmpiShoes</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
+    <style>
+        .banner {
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.3)), 
+                        url('{% static "img/accesorio.jpg" %}') center/cover no-repeat !important;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-limpiar {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .btn-limpiar:hover {
+            background-color: #e9ecef;
+        }
+        
+        /* Estilos para el modal */
+       
+    </style>
+</head>
+<body>
+    <!-- Header con navegación -->
+    <header>
+        <div class="header-container">
+            <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
+            <nav>
+                <ul>
+                    <li><a href="{% url 'catalogo_principal' %}" >Zapatos</a></li>
+                    <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                    <li><a href="{% url 'catalogo_accesorio' %}" class="active">Accesorios</a></li>
+                    <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
+                    <li><a href="{% url 'contacto' %}">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Banner principal -->
+    <div class="container">
+        <div class="banner">
+            <div class="banner-content">
+                <h1>Colección De Descuento</h1>
+                <p>Descubre las últimas tendencias en calzado deportivo y casual con hasta 30% de descuento.</p>
+                <a href="{% url 'catalogo_descuento' %}" class="btn">Ver Colección</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <main class="container">
+        <h2>Nuestros Zapatos</h2>
+        
+        <!-- Filtros y productos -->
+        <div class="catalog-container">
+            <!-- Filtros laterales -->
+            <aside class="filters">
+                <div class="filter-section">
+                    <h3>Marcas</h3>
+                    <div class="filter-options">
+                        {% for marca in marcas %}
+                        <label>
+                            <input type="checkbox" name="marca" value="{{ marca.id }}"> 
+                            {{ marca.nombre }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>Precio</h3>
+                    <div class="filter-options">
+                        <label>
+                            <input type="radio" name="precio" value="0-50"> Menos de $50
+                        </label>
+                        <label>
+                            <input type="radio" name="precio" value="50-100"> $50 - $100
+                        </label>
+                        <label>
+                            <input type="radio" name="precio" value="100-200"> $100 - $200
+                        </label>
+                        <label>
+                            <input type="radio" name="precio" value="200+"> Más de $200
+                        </label>
+                    </div>
+                </div>
+                
+               
+                
+                <!-- Botón para limpiar filtros -->
+                <button id="limpiar-filtros" class="btn-limpiar">Limpiar Filtros</button>
+            </aside>
+
+            <!-- Contenedor de productos -->
+            <div class="products-container">
+                <!-- Indicador de carga -->
+                <div class="loading" id="loading-indicator">
+                    <div class="loading-spinner"></div>
+                    <p>Filtrando productos...</p>
+                </div>
+                
+                <!-- Grid de productos -->
+                <div class="products-grid" id="products-container">
+                    {% for producto in productos %}
+                    <div class="flip-card">
+                        <div class="flip-card-inner">
+                            <!-- Parte frontal de la tarjeta -->
+                            <div class="flip-card-front">
+                                <div class="product-card">
+                                    <div class="product-image-link">
+                                        {% with producto.imagenes.first as imagen %}
+                                        {% if imagen %}
+                                        <img src="{{ imagen.imagen.url }}" 
+                                             alt="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}" 
+                                             class="product-image"
+                                             loading="lazy">
+                                        {% else %}
+                                        <img src="{% static 'img/logoPng.webp' %}" 
+                                             alt="Imagen no disponible" 
+                                             class="product-image"
+                                             loading="lazy">
+                                        {% endif %}
+                                        {% endwith %}
+                                        
+                                        {% if producto.precio_descuento %}
+                                        <div class="discount-badge">
+                                            -{{ producto.porcentaje_descuento }}%
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="product-info">
+                                        <div class="product-brand">{{ producto.modelo.marca.nombre }}</div>
+                                        <h3 class="product-name">{{ producto.modelo.nombre }}</h3>
+                                        
+                                        <div class="product-price">
+                                            {% if producto.precio_descuento %}
+                                                <span class="current-price">${{ producto.precio_descuento }}</span>
+                                                <span class="original-price">${{ producto.precio }}</span>
+                                            {% else %}
+                                                <span class="current-price">${{ producto.precio }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="product-colors">
+                                            {% for color in producto.colores.all %}
+                                            <span class="color-dot" 
+                                                  style="background-color: {{ color.codigo_hex }};" 
+                                                  title="{{ color.nombre }}"></span>
+                                            {% endfor %}
+                                            <span class="color-count">+{{ producto.colores.count }}</span>
+                                        </div>
+                                        
+                                        <div class="product-stock">
+                                            {% if producto.stock == 0 %}
+                                                <span class="stock-badge available">Disponible</span>
+                                            {% elif producto.stock == 2 %}
+                                                <span class="stock-badge low">Pocas Unidades</span>
+                                            {% elif producto.stock == 3 %}
+                                                <span class="stock-badge out">Agotado</span>
+                                            {% else %}
+                                                <span class="stock-badge in-stock">Proximamente </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Parte trasera de la tarjeta (al hacer flip) -->
+                            <div class="flip-card-back">
+                                <h3>Más Colores Disponibles</h3>
+                                <p>Este modelo está disponible en {{ producto.colores.count }} colores diferentes</p>
+                                
+                                <div class="product-colors" style="margin: 1rem 0;">
+                                    {% for color in producto.colores.all %}
+                                    <span class="color-dot" 
+                                          style="background-color: {{ color.codigo_hex }};" 
+                                          title="{{ color.nombre }}"></span>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button class="btn-ver-detalle" data-product-id="123" onclick="abrirModal({{ producto.id }})">
+                                    Ver Todos los Colores
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="no-products">
+                        <p>No se encontraron productos.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner promocional intermedio -->
+        
+    </main>
+
+       <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>EMPI Shoes</h3>
+                <p>La mejor selección de zapatos, ropa y accesorios con las últimas tendencias y marcas exclusivas.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Enlaces Rápidos</h3>
+                <ul>
+                    <li><a href="https://ch1pilo.github.io/EMPISHOES/#about">Sobre Nosotros</a></li>
+                    <li><a href="https://ch1pilo.github.io/EMPISHOES/#testimonios">Testimonios</a></li>
+                    <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
+                    <li><a href="{% url 'politica_privacidad' %}">Política de Privacidad</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <ul>
+                    <li>Email: info@empishoes.com</li>
+                    <li>Teléfono: +58 (412) 797-1189</li>
+                    <li>Dirección: Venezuela, Zulia, maracaibo, El Caujuaro</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            &copy; 2023 EMPI Shoes. Todos los derechos reservados.
+        </div>
+    </footer>
+
+    <!-- Modal para ver detalles del producto -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal()">&times;</span>
+            <div class="modal-product-header">
+                <div class="modal-product-info">
+                    <h2 class="modal-product-title" id="modalProductName"></h2>
+                    <div class="modal-product-price" id="modalProductPrice"></div>
+                    
+                    <div class="modal-color-selector">
+                        <h4>Selecciona un color:</h4>
+                        <div class="modal-color-options" id="modalColorOptions"></div>
+                    </div>
+                    
+                    <div class="modal-product-details">
+                        <div class="modal-detail-section">
+                            <h4>Descripción</h4>
+                            <p id="modalProductDescription"></p>
+                        </div>
+                        
+                        <div class="modal-detail-section">
+                            <h4>Tallas disponibles</h4>
+                            <div id="modalProductSizes"></div>
+                        </div>
+                        
+                        <div class="modal-detail-section">
+                            <h4>Estado</h4>
+                            <div id="modalProductStock"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-product-gallery">
+                    <div class="modal-gallery-main">
+                        <img id="modalMainImage" src="" alt="Imagen del producto">
+                    </div>
+                    <div class="modal-gallery-thumbs" id="modalGalleryThumbs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ==============================================
+// FUNCIONES DEL MODAL (SIMPLIFICADAS)
+// ==============================================
+
+// Variables globales para manejar el estado
+let productoActual = null;
+let colorSeleccionado = null;
+
+// Función para abrir el modal
+function abrirModal(productId) {
+    console.log('Abriendo modal para producto:', productId);
+    
+    const modal = document.getElementById('productModal');
+    modal.style.display = 'block';
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+    document.body.style.overflow = 'hidden';
+    
+    // Resetear estado
+    productoActual = null;
+    colorSeleccionado = null;
+    
+    // Mostrar loader
+    document.getElementById('modalProductName').textContent = 'Cargando...';
+    document.getElementById('modalProductPrice').innerHTML = '';
+    document.getElementById('modalProductDescription').textContent = '';
+    document.getElementById('modalProductSizes').innerHTML = '';
+    document.getElementById('modalProductStock').innerHTML = '';
+    document.getElementById('modalColorOptions').innerHTML = '';
+    document.getElementById('modalGalleryThumbs').innerHTML = '';
+    document.getElementById('modalMainImage').src = '';
+    
+    // Hacer petición AJAX
+    fetch(`/obtener-detalles-producto/${productId}/`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error al cargar el producto');
+        }
+        return response.json();
+    })
+    .then(producto => {
+        console.log('Datos del producto recibidos:', producto);
+        productoActual = producto;
+        
+        // Llenar el modal con datos
+        actualizarModalConProducto(producto);
+        
+        // Seleccionar automáticamente el primer color
+        if (producto.colores && producto.colores.length > 0) {
+            seleccionarColor(producto.colores[0].id, 0);
+        }
+    })
+    .catch(error => {
+        console.error('Error al cargar el producto:', error);
+        document.getElementById('modalProductName').textContent = 'Error al cargar el producto';
+        document.getElementById('modalProductDescription').textContent = 
+            'No se pudieron cargar los datos. Por favor, intenta nuevamente.';
+    });
+}
+
+// Función para actualizar el modal con los datos del producto
+function actualizarModalConProducto(producto) {
+    document.getElementById('modalProductName').textContent = producto.nombre;
+    
+    // Precios
+    if (producto.precio_descuento) {
+        document.getElementById('modalProductPrice').innerHTML = `
+            <span class="current-price">$${producto.precio_descuento.toFixed(2)}</span>
+            <span class="original-price">$${producto.precio.toFixed(2)}</span>
+        `;
+    } else {
+        document.getElementById('modalProductPrice').innerHTML = `
+            <span class="current-price">$${producto.precio.toFixed(2)}</span>
+        `;
+    }
+    
+    // Descripción
+    document.getElementById('modalProductDescription').textContent = producto.descripcion || 'Descripción no disponible';
+    
+    // Tallas
+    const sizesHTML = producto.tallas.map(talla => 
+        `<span class="size-badge">${talla}</span>`
+    ).join('');
+    document.getElementById('modalProductSizes').innerHTML = sizesHTML || '<p>No hay tallas disponibles</p>';
+    
+    // Stock
+    let stockHTML = '';
+    if (producto.stock === 0) {
+        stockHTML = '<span class="stock-badge available">Disponible</span>';
+    } else if (producto.stock === 2) {
+        stockHTML = '<span class="stock-badge low">Pocas Unidades</span>';
+    } else if (producto.stock === 3) {
+        stockHTML = '<span class="stock-badge out">Agotado</span>';
+    } else {
+        stockHTML = '<span class="stock-badge in-stock">Proximamente</span>';
+    }
+    document.getElementById('modalProductStock').innerHTML = stockHTML;
+    
+    // Colores
+    if (producto.colores && producto.colores.length > 0) {
+        const colorsHTML = producto.colores.map((color, index) => 
+            `<div class="modal-color-option" 
+                  data-color-id="${color.id}"
+                  style="background-color: ${color.codigo_hex};" 
+                  onclick="seleccionarColor(${color.id}, ${index})"
+                  title="${color.nombre}"></div>`
+        ).join('');
+        document.getElementById('modalColorOptions').innerHTML = colorsHTML;
+    } else {
+        document.getElementById('modalColorOptions').innerHTML = '<p>No hay colores disponibles</p>';
+    }
+}
+
+// Función para seleccionar un color
+function seleccionarColor(colorId, index) {
+    if (!productoActual) return;
+    
+    console.log('Color seleccionado:', colorId);
+    colorSeleccionado = colorId;
+    
+    // Actualizar UI de colores
+    const colorOptions = document.querySelectorAll('.modal-color-option');
+    colorOptions.forEach((option, i) => {
+        if (i === index) {
+            option.classList.add('active');
+        } else {
+            option.classList.remove('active');
+        }
+    });
+    
+    // Filtrar imágenes por color seleccionado
+    filtrarImagenesPorColor(colorId);
+}
+
+// Función para filtrar imágenes por color
+function filtrarImagenesPorColor(colorId) {
+    if (!productoActual || !productoActual.imagenes) return;
+    
+    // Filtrar imágenes del color seleccionado
+    const imagenesDelColor = productoActual.imagenes.filter(imagen => 
+        imagen.color_id === colorId
+    );
+    
+    // Si no hay imágenes para este color, mostrar todas
+    const imagenesAMostrar = imagenesDelColor.length > 0 ? 
+        imagenesDelColor : productoActual.imagenes;
+    
+    // Mostrar imágenes
+    actualizarGaleriaImagenes(imagenesAMostrar);
+}
+
+// Función para actualizar la galería de imágenes
+function actualizarGaleriaImagenes(imagenes) {
+    const thumbsContainer = document.getElementById('modalGalleryThumbs');
+    
+    if (imagenes && imagenes.length > 0) {
+        // Ordenar imágenes: principales primero
+        const imagenesOrdenadas = [...imagenes].sort((a, b) => 
+            (b.es_principal || false) - (a.es_principal || false)
+        );
+        
+        // Mostrar primera imagen
+        const primeraImagen = imagenesOrdenadas[0];
+        document.getElementById('modalMainImage').src = primeraImagen.imagen_url;
+        
+        // Crear miniaturas
+        const thumbsHTML = imagenesOrdenadas.map((imagen, index) => {
+            // Encontrar el color de esta imagen para resaltarlo
+            const colorDeImagen = productoActual.colores.find(color => 
+                color.id === imagen.color_id
+            );
+            const colorInfo = colorDeImagen ? `data-color-id="${colorDeImagen.id}"` : '';
+            
+            return `
+                <div class="modal-gallery-thumb ${index === 0 ? 'active' : ''}" 
+                     ${colorInfo}
+                     onclick="cambiarImagenPrincipal('${imagen.imagen_url}', ${index}, ${imagen.color_id || 'null'})">
+                    <img src="${imagen.imagen_url}" alt="Imagen ${index + 1}">
+                </div>
+            `;
+        }).join('');
+        
+        thumbsContainer.innerHTML = thumbsHTML;
+    } else {
+        // Imagen por defecto
+        document.getElementById('modalMainImage').src = '{% static "img/logoPng.webp" %}';
+        thumbsContainer.innerHTML = '<p>No hay imágenes disponibles</p>';
+    }
+}
+
+// Función para cambiar imagen principal (ahora también selecciona el color)
+function cambiarImagenPrincipal(urlImagen, index, colorId) {
+    // Cambiar imagen principal
+    document.getElementById('modalMainImage').src = urlImagen;
+    
+    // Actualizar miniaturas activas
+    const thumbs = document.querySelectorAll('.modal-gallery-thumb');
+    thumbs.forEach((thumb, i) => {
+        if (i === index) {
+            thumb.classList.add('active');
+        } else {
+            thumb.classList.remove('active');
+        }
+    });
+    
+    // Si la imagen tiene un color asociado, seleccionarlo
+    if (colorId && productoActual) {
+        const colorIndex = productoActual.colores.findIndex(color => color.id === colorId);
+        if (colorIndex !== -1) {
+            seleccionarColor(colorId, colorIndex);
+        }
+    }
+}
+
+// Función para cerrar el modal
+function cerrarModal() {
+    const modal = document.getElementById('productModal');
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+    document.body.style.overflow = 'auto';
+    
+    // Limpiar estado
+    productoActual = null;
+    colorSeleccionado = null;
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Cerrar con clic fuera
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('productModal');
+        if (event.target === modal) {
+            cerrarModal();
+        }
+    });
+    
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            cerrarModal();
+        }
+    });
+    
+    // Cerrar con botón X
+    const closeBtn = document.querySelector('.close-modal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', cerrarModal);
+    }
+});
+
+// Función auxiliar para encontrar índice de color
+function encontrarIndiceColor(colorId) {
+    if (!productoActual || !productoActual.colores) return -1;
+    return productoActual.colores.findIndex(color => color.id === colorId);
+}
+
+// ==============================================
+// FUNCIONES DE FILTRADO (MANTIENE TU CÓDIGO ORIGINAL)
+// ==============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener elementos del DOM
+    const filterCheckboxes = document.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+    const productsGrid = document.getElementById('products-container');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const limpiarFiltrosBtn = document.getElementById('limpiar-filtros');
+    
+    // Agregar event listeners a todos los filtros
+    filterCheckboxes.forEach(filter => {
+        filter.addEventListener('change', aplicarFiltros);
+    });
+    
+    // Event listener para el botón de limpiar filtros
+    if (limpiarFiltrosBtn) {
+        limpiarFiltrosBtn.addEventListener('click', limpiarFiltros);
+    }
+    
+    // Función para aplicar los filtros
+    function aplicarFiltros() {
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        
+        const marcasSeleccionadas = Array.from(document.querySelectorAll('input[name="marca"]:checked'))
+            .map(checkbox => checkbox.value);
+        
+        const precioSeleccionado = document.querySelector('input[name="precio"]:checked')?.value || '';
+        
+        const coloresSeleccionados = Array.from(document.querySelectorAll('input[name="color"]:checked'))
+            .map(checkbox => checkbox.value);
+        
+        const filtros = {
+            marcas: marcasSeleccionadas,
+            precio: precioSeleccionado,
+            colores: coloresSeleccionados
+        };
+        
+        console.log('Enviando filtros:', filtros);
+        
+        
+        fetch('filtrar-productosAccesorio/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(filtros)
+        })
+        .then(response => {
+            console.log('Status de respuesta:', response.status);
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Respuesta recibida:', data);
+            if (data.productos) {
+                renderizarProductos(data.productos);
+            } else if (data.error) {
+                console.error('Error del servidor:', data.error);
+                alert('Error al filtrar productos: ' + data.error);
+            }
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            alert('Error de conexión. Por favor, intenta nuevamente. Detalles en consola.');
+        });
+    }
+    
+    // Función para limpiar todos los filtros
+    function limpiarFiltros() {
+        filterCheckboxes.forEach(filter => {
+            filter.checked = false;
+        });
+        aplicarFiltros();
+    }
+    
+    // Función para renderizar productos desde JSON
+    function renderizarProductos(productos) {
+        if (!productsGrid) {
+            console.error('No se encontró el contenedor de productos');
+            return;
+        }
+        
+        if (productos.length === 0) {
+            productsGrid.innerHTML = '<div class="no-products"><p>No se encontraron productos.</p></div>';
+            return;
+        }
+        
+        let html = '';
+        productos.forEach(producto => {
+            // Asegurar que tenemos valores válidos
+            const precio = producto.precio || 0;
+            const precioDescuento = producto.precio_descuento || null;
+            const porcentajeDescuento = producto.porcentaje_descuento || 0;
+            const imagenUrl = producto.imagen_url || '{% static "img/logoPng.webp" %}';
+            
+            html += `
+            <div class="flip-card">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="product-card">
+                            <div class="product-image-link">
+                                <img src="${imagenUrl}" 
+                                     alt="${producto.marca} ${producto.nombre}" 
+                                     class="product-image"
+                                     loading="lazy">
+                                ${precioDescuento ? 
+                                    `<div class="discount-badge">-${porcentajeDescuento}%</div>` : ''}
+                            </div>
+                            
+                            <div class="product-info">
+                                <div class="product-brand">${producto.marca}</div>
+                                <h3 class="product-name">${producto.nombre}</h3>
+                                
+                                <div class="product-price">
+                                    ${precioDescuento ? 
+                                        `<span class="current-price">$${precioDescuento}</span>
+                                         <span class="original-price">$${precio}</span>` :
+                                        `<span class="current-price">$${precio}</span>`}
+                                </div>
+                                
+                                <div class="product-colors">
+                                    ${producto.colores.slice(0, 3).map(color => 
+                                        `<span class="color-dot" style="background-color: ${color.codigo_hex};" title="${color.nombre}"></span>`
+                                    ).join('')}
+                                    <span class="color-count">+${producto.colores.length}</span>
+                                </div>
+                                
+                                <div class="product-stock">
+                                    ${getStockBadge(producto.stock)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flip-card-back">
+                        <h3>Más Colores Disponibles</h3>
+                        <p>Este modelo está disponible en ${producto.colores.length} colores diferentes</p>
+                        
+                        <div class="product-colors" style="margin: 1rem 0;">
+                            ${producto.colores.map(color =>
+                                `<span class="color-dot" style="background-color: ${color.codigo_hex};" title="${color.nombre}"></span>`
+                            ).join('')}
+                        </div>
+                        
+                        <button class="btn-ver-detalle" onclick="abrirModal(${producto.id})">
+                            Ver Todos los Colores
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        
+        productsGrid.innerHTML = html;
+    }
+    
+    // Función auxiliar para el badge de stock
+    function getStockBadge(stock) {
+        if (stock === 0) return '<span class="stock-badge available">Disponible</span>';
+        if (stock === 2) return '<span class="stock-badge low">Pocas Unidades</span>';
+        if (stock === 3) return '<span class="stock-badge out">Agotado</span>';
+        return '<span class="stock-badge in-stock">Proximamente</span>';
+    }
+    
+    // Función auxiliar para obtener el token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+
+// ==============================================
+// INICIALIZACIÓN ADICIONAL
+// ==============================================
+
+// Asegurar que los botones tengan el evento click
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-ver-detalle')) {
+        const productId = e.target.getAttribute('data-product-id') || '123';
+        abrirModal(productId);
+    }
+});
+
+// Cerrar modal con el botón X
+document.querySelector('.close-modal').addEventListener('click', cerrarModal);
+</script>
+</body>
+</html>

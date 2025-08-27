@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Términos y Condiciones - EmpiShoes</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
+    <style>
+        .legal-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .legal-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .legal-section {
+            margin-bottom: 25px;
+        }
+        .legal-section h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        p{
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header (usa el mismo de contacto.html) -->
+    <header>
+        <div class="header-container">
+            <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
+            <nav>
+                <ul>
+                    <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
+                    <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                    <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
+                    <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
+                    <li><a href="{% url 'contacto' %}">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="legal-container">
+            <div class="legal-header">
+                <h1>Términos y Condiciones</h1>
+                <p>Última actualización: {% now "d M Y" %}</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>1. Aceptación de los Términos</h2>
+                <p>Al acceder y utilizar el sitio web de EMPI Shoes, usted acepta estar sujeto a estos Términos y Condiciones.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>2. Información del Producto</h2>
+                <p>Nos esforzamos por mostrar con la mayor precisión posible los colores y características de nuestros productos. Sin embargo, no podemos garantizar que la visualización en cualquier monitor sea completamente precisa.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>3. Precios y Pagos</h2>
+                <p>Todos los precios están expresados en dólares americanos (USD) e incluyen IVA cuando aplica. Nos reservamos el derecho de modificar los precios en cualquier momento.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>4. Envíos y Entregas</h2>
+                <p>Los tiempos de entrega son estimados y pueden variar según la ubicación y condiciones del servicio de mensajería.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>5. Devoluciones y Reembolsos</h2>
+                <p>Aceptamos devoluciones dentro de los 30 días posteriores a la recepción del producto. Los productos deben estar en su estado original y con el empaque intacto.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>6. Propiedad Intelectual</h2>
+                <p>Todo el contenido del sitio web, incluyendo logos, imágenes y textos, es propiedad de EMPI Shoes y está protegido por leyes de propiedad intelectual.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>7. Limitación de Responsabilidad</h2>
+                <p>EMPI Shoes no será responsable por daños indirectos, incidentales o consecuentes resultantes del uso de nuestros productos o servicios.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>8. Ley Aplicable</h2>
+                <p>Estos términos se regirán por las leyes de la República Bolivariana de Venezuela.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2>9. Contacto</h2>
+                <p>Para cualquier pregunta sobre estos términos, contáctenos a: legal@empishoes.com</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer (usa el mismo de contacto.html) -->
+</body>
+</html>

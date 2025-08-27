@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Catálogo</title>
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+</head>
+<body>
+    <header>
+        <div class="container header-container" >
+            <div class="header-content">
+                <h1>Gestión de Catálogo</h1>
+
+                
+            </div>
+
+            {% if user.is_authenticated %}
+            <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+            {% endif %}
+        </div>
+    </header>
+    {% if messages %}
+    {% for message in messages %}
+        <div  class="alerta">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <ul class="nav-tabs">
+            <li><a href="{% url 'gestion_marcas' %}" class="tab-link active">Marcas</a></li>
+            <li><a href="{% url 'gestion_modelos' %}" class="tab-link ">Modelos</a></li>
+            <li><a href="{% url 'gestion_colores' %}" class="tab-link">Colores</a></li>
+            <li><a href="{% url 'gestion_tallas' %}" class="tab-link">Tallas</a></li>
+            <li><a href="{% url 'gestion_productos' %}" class="tab-link">Productos</a></li>
+        </ul>
+        
+        <div class="alert" id="alert-box" style="display: none;"></div>
+        
+        <!-- Sección Marcas -->
+        <div id="marcas" class="tab-content active">
+            <h2>Gestión de Marcas</h2>
+            <form id="form-marca" action="{% url 'guardar_marca' %}" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="marca-nombre">Nombre de la Marca</label>
+                    <input type="text" id="marca-nombre" name='nombre_marca' required>
+                </div>
+                <div class="form-group">
+                    <label>Tipos de Producto</label>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center;">Seleccionar</th>
+                                    <th>Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-body-tallas">
+                                <!-- Filas de tipos se cargarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <input type="hidden" id="tallas-seleccionadas" name="tipos_seleccionados">
+                </div> <!-- Este </div> faltaba -->
+                <div class="form-group">
+                    <label for="marca-descripcion">Descripción (opcional)</label>
+                    <textarea id="marca-descripcion" name="descripcion"></textarea> <!-- Añadido name -->
+                </div> 
+                <button type="submit">Guardar Marca</button>
+            </form>
+            
+            <h3>Marcas Existentes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for marca in marcas %}
+                    <tr>
+                        <td>{{ marca.id }}</td>
+                        <td>{{ marca.nombre }}</td>
+                        <td>{{ marca.descripcion }}</td>
+                        <td>
+                            <button class="btn-edit" onclick="editarMarca({{ marca.id }})" data-id="{{ marca.id }}"  >Editar</button>
+                            <button class="btn-delete" onclick="eliminarMarca({{ marca.id }})" data-id="{{ marca.id }}">Eliminar</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+
+        // Función para redireccionar a la página de edición
+        function editarMarca(id) {
+            // Construye la URL usando la URL de Django
+            window.location.href = "{% url 'editar_marca' 0 %}".replace('0', id);
+        }
+        
+        // Función para eliminar (ejemplo)
+        function eliminarMarca(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta marca?')) {
+                // Aquí iría la lógica para eliminar
+               window.location.href = "{% url 'eliminar_marca' 0 %}".replace('0', id);
+            }
+        }
+        // Cargar tipos al iniciar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarTallas();
+            
+            // Añadir evento al formulario para asegurar que se actualicen los tipos seleccionados
+            document.getElementById('form-marca').addEventListener('submit', function(e) {
+                actualizarTallasOcultas();
+                // Aquí puedes añadir validación adicional si es necesario
+            });
+        });
+
+        function cargarTallas() {
+            fetch('/obtener_tipos/')
+                .then(response => response.json())
+                .then(data => {
+                    const tablaBody = document.getElementById('tabla-body-tallas');
+                    tablaBody.innerHTML = '';
+                    
+                    data.forEach(tipo => {
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                            <td style="text-align: center;">
+                                <input type="checkbox" class="talla-checkbox" value="${tipo.id}" 
+                                       data-talla="${tipo.nombre}" data-categoria="${tipo.activo || 'N/A'}">
+                            </td>
+                            <td>${tipo.nombre}</td>
+                        `;
+                        tablaBody.appendChild(fila);
+                    });
+                    
+                    // Añadir event listeners a los checkboxes después de crearlos
+                    const checkboxes = document.querySelectorAll('.talla-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.addEventListener('change', actualizarTallasOcultas);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('tabla-body-tallas').innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: red;">
+                                Error al cargar los tipos de producto. Inténtelo de nuevo más tarde.
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        function filtrarTallas() {
+            const filtro = document.getElementById('filtro-tallas').value.toLowerCase();
+            const filas = document.querySelectorAll('#tabla-body-tallas tr');
+            
+            filas.forEach(fila => {
+                const textoFila = fila.textContent.toLowerCase();
+                if (textoFila.includes(filtro)) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+        }
+
+        function obtenerIdsTallasSeleccionadas() {
+            const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
+            const ids = [];
+            checkboxes.forEach(checkbox => {
+                ids.push(checkbox.value);
+            });
+            return ids;
+        }
+
+        function actualizarTallasOcultas() {
+            const ids = obtenerIdsTallasSeleccionadas();
+            document.getElementById('tallas-seleccionadas').value = ids.join(',');
+            console.log('Tipos seleccionados:', document.getElementById('tallas-seleccionadas').value); // Para debug
+        }
+    </script>
+</body>
+</html>
