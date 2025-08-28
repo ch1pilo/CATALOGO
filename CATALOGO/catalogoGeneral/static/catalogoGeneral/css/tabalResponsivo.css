@@ -4,7 +4,55 @@
     display: none;
 }
     
-    /* Media Query para móviles */
+.modelos-cards {
+    display: none;
+}
+
+.modelo-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+}
+
+.modelo-card .campo {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.modelo-card .etiqueta {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.modelo-card .acciones {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+    color: #495057;
+    font-size: 0.85em;
+    margin: 2px;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .tabla-contenedor {
+        display: none;
+    }
+    
+    .modelos-cards {
+        display: block;
+    }
+}    /* Media Query para móviles */
 @media screen and (max-width: 768px) {
     .tabla-contenedor {
         display: none;

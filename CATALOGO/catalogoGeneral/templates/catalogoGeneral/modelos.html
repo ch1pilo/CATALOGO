@@ -7,6 +7,58 @@
     <title>Gestión de Catálogo</title>
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/tabalResponsivo.css' %}">
+    <style>
+        /* Estilos adicionales para las tarjetas de modelos */
+        .modelos-cards {
+            display: none;
+        }
+        
+        .modelo-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        
+        .modelo-card .campo {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .modelo-card .etiqueta {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .modelo-card .acciones {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            color: #495057;
+            font-size: 0.85em;
+            margin: 2px;
+        }
+        
+        /* Responsividad */
+        @media (max-width: 768px) {
+            .tabla-contenedor {
+                display: none;
+            }
+            
+            .modelos-cards {
+                display: block;
+            }
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -130,24 +182,69 @@
                             </td>
                             <td class="actions">
                                 <button class="btn-edit" onclick="editarModelo({{modelo.id}})" data-id="{{ modelo.id }}">Editar</button>
-                                <button class="btn-delete" onclick=eliminarModelo({{ modelo.id }}) data-id="{{ modelo.id }}">Eliminar</button>
+                                <button class="btn-delete" onclick="eliminarModelo({{ modelo.id }})" data-id="{{ modelo.id }}">Eliminar</button>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6">No hay modelos registrados</td>
+                            <td colspan="5">No hay modelos registrados</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             <div class="modelos-cards" id="modelos-cards">
-                <!-- Los datos se cargarán con JavaScript -->
+                {% for modelo in modelos %}
+                <div class="modelo-card">
+                    <div class="campo">
+                        <span class="etiqueta">ID:</span>
+                        <span>{{ modelo.id }}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Marca:</span>
+                        <span>{{ modelo.marca.nombre }}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Nombre:</span>
+                        <span>{{ modelo.nombre }}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Tipos:</span>
+                        <span>
+                            {% for tipo in modelo.tipoProducto.all %}
+                                <span class="badge">{{ tipo.nombre }}</span>{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                <span class="text-muted">Sin tipos asignados</span>
+                            {% endfor %}
+                        </span>
+                    </div>
+                    <div class="acciones">
+                        <button class="btn-edit" onclick="editarModelo({{modelo.id}})" data-id="{{ modelo.id }}">Editar</button>
+                        <button class="btn-delete" onclick="eliminarModelo({{ modelo.id }})" data-id="{{ modelo.id }}">Eliminar</button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="modelo-card">
+                    <p>No hay modelos registrados</p>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 
     <script>
+        // Ejecutar cuando el documento esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar la vista
+            cargarModelos();
+            
+            // Si hay una marca seleccionada, cargar sus tipos
+            const marcaSelect = document.getElementById('id_marca');
+            if (marcaSelect.value) {
+                cargarTiposPorMarca();
+            }
+        });
+        
         function editarModelo(id) {
             window.location.href = "{% url 'editar_modelo' 0 %}".replace('0', id);
         }
@@ -233,130 +330,11 @@
             document.getElementById('tipos-seleccionados').value = ids.join(',');
         }
         
-// REEMPLAZA la función cargarModelos() con ESTA VERSIÓN CORREGIDA:
-function cargarModelos() {
-    const tablaModelos = document.getElementById('tabla-modelos');
-    const cardsContainer = document.getElementById('modelos-cards');
-    
-    // Limpiar contenedores
-    if (tablaModelos) tablaModelos.innerHTML = '';
-    if (cardsContainer) cardsContainer.innerHTML = '';
-    
-    // Obtener las filas ORIGINALES - SELECTOR CORREGIDO
-    const filasOriginales = document.querySelectorAll('#tabla-modelos > tr');
-    
-    console.log('Filas encontradas:', filasOriginales.length);
-    
-    // Si no hay filas, mostrar mensaje de vacío
-    if (filasOriginales.length === 0) {
-        if (tablaModelos) {
-            tablaModelos.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align: center;">
-                        No hay modelos registrados
-                    </td>
-                </tr>
-            `;
+        function cargarModelos() {
+            console.log('Cargando modelos...');
+            // Esta función se ejecuta al cargar la página
+            // Puedes agregar lógica adicional si necesitas cargar datos dinámicamente
         }
-        if (cardsContainer) {
-            cardsContainer.innerHTML = `
-                <div class="modelo-card">
-                    <p>No hay modelos registrados</p>
-                </div>
-            `;
-        }
-        return;
-    }
-    
-    // Llenar tabla (CLONAR correctamente las filas)
-    if (tablaModelos) {
-        filasOriginales.forEach(fila => {
-            // Solo clonar si es una fila con datos (no el mensaje de vacío)
-            if (fila.cells.length >= 5) {
-                // ¡IMPORTANTE! Usar cloneNode(true) y luego appendChild
-                const filaClonada = fila.cloneNode(true);
-                tablaModelos.appendChild(filaClonada);
-            }
-        });
-    }
-    
-    // Llenar tarjetas para móviles
-    if (cardsContainer) {
-    filasOriginales.forEach(fila => {
-        const celdas = fila.querySelectorAll('td');
-        // Solo procesar filas con datos completos
-        if (celdas.length >= 5) {
-            const card = document.createElement('div');
-            card.className = 'modelo-card';
-            
-            // Obtener el texto de tipos (puede contener HTML)
-            let tiposTexto = celdas[3].textContent;
-            // Si está vacío, usar el texto alternativo
-            if (!tiposTexto.trim()) {
-                tiposTexto = 'Sin tipos asignados';
-            }
-            
-            card.innerHTML = `
-                <div class="campo">
-                    <span class="etiqueta">ID:</span>
-                    <span>${celdas[0].textContent}</span>
-                </div>
-                <div class="campo">
-                    <span class="etiqueta">Marca:</span>
-                    <span>${celdas[1].textContent}</span>
-                </div>
-                <div class="campo">
-                    <span class="etiqueta">Nombre:</span>
-                    <span>${celdas[2].textContent}</span>
-                </div>
-                <div class="campo">
-                    <span class="etiqueta">Tipos:</span>
-                    <span>${tiposTexto}</span>
-                </div>
-                <div class="acciones">
-                    <button class="btn-edit" data-id="${celdas[4].querySelector('.btn-edit').getAttribute('data-id')}">Editar</button>
-                    <button class="btn-delete" data-id="${celdas[4].querySelector('.btn-delete').getAttribute('data-id')}">Eliminar</button>
-                </div>
-            `;
-            cardsContainer.appendChild(card);
-        }
-    });
-}
-    
-    // Agregar event listeners
-    function agregarEventListenersBotones() {
-    // Para botones en la tabla
-    document.querySelectorAll('#tabla-modelos .btn-edit, #tabla-modelos .btn-delete').forEach(btn => {
-        const modeloId = btn.getAttribute('data-id');
-        if (!modeloId) return;
-        
-        if (btn.classList.contains('btn-edit')) {
-            btn.onclick = () => editarModelo(modeloId);
-        } else {
-            btn.onclick = () => {
-                if (confirm('¿Estás seguro de que quieres eliminar este modelo?')) {
-                    eliminarModelo(modeloId);
-                }
-            };
-        }
-    });
-    
-    // Para botones en las tarjetas
-    document.querySelectorAll('#modelos-cards .btn-edit, #modelos-cards .btn-delete').forEach(btn => {
-        const modeloId = btn.getAttribute('data-id');
-        if (!modeloId) return;
-        
-        if (btn.classList.contains('btn-edit')) {
-            btn.onclick = () => editarModelo(modeloId);
-        } else {
-            btn.onclick = () => {
-                if (confirm('¿Estás seguro de que quieres eliminar este modelo?')) {
-                    eliminarModelo(modeloId);
-                }
-            };
-        }
-    });
-}
     </script>
 </body>
 </html>
