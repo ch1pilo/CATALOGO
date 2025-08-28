@@ -17,7 +17,7 @@
             </div>
 
             {% if user.is_authenticated %}
-            <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
             {% endif %}
         </div>
     </header>
@@ -79,7 +79,6 @@
                     <tr>
                         <th>ID</th>
                         <th>Nombre</th>
-                        <th>Descripción</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -88,7 +87,6 @@
                     <tr>
                         <td>{{ marca.id }}</td>
                         <td>{{ marca.nombre }}</td>
-                        <td>{{ marca.descripcion }}</td>
                         <td>
                             <button class="btn-edit" onclick="editarMarca({{ marca.id }})" data-id="{{ marca.id }}"  >Editar</button>
                             <button class="btn-delete" onclick="eliminarMarca({{ marca.id }})" data-id="{{ marca.id }}">Eliminar</button>

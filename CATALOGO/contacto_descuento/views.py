@@ -218,7 +218,20 @@ def mensaje_wasap(request):
         phone = request.POST.get('phone')
         subject = request.POST.get('subject')
         message = request.POST.get('message')
-        
+        if name==None and phone==None and subject==None and message==None:
+            producto = request.POST.get('productoSeleccionado')
+            print(f'producto seleccionado {producto}')
+            objetoProducto = Producto.objects.get(id=producto)
+            print(f'producto seleccionado {objetoProducto.modelo.nombre}')
+            mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}," con un precio de {objetoProducto.precio}$'
+            enviar = mensaje.replace(' ', '%20')
+            url_wasap = f"https://api.whatsapp.com/send?phone=584246018457&text={enviar}"
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'url_wasap': url_wasap,
+                    'message': 'Mensaje enviado correctamente'
+                })
         # Crear mensaje para WhatsApp
         mensaje_whatsapp = f"Hola, mi nombre es {name}. Asunto: {subject}. {message}"
         if phone:

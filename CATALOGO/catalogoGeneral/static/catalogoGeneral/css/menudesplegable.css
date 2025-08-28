@@ -1,0 +1,75 @@
+.sub-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}
+
+/* Estilos del botón de hamburguesa */
+.menu-toggle {
+    display: none; /* Oculto por defecto en escritorio */
+    background: #7e57c2; /* Color azul, puedes cambiarlo */
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    z-index: 1001; /* Mayor que el menú para que se vea por encima */
+    border-radius: 5px;
+    top: 15px;
+    right: 15px;
+    outline: none; /* Elimina el borde al hacer click */
+}
+
+.icon-bar {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: #fff;
+    margin: 5px 0;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Animación del botón al estar activo (opcional, para una "X") */
+.menu-toggle.active .icon-bar:nth-child(2) {
+    opacity: 0;
+}
+.menu-toggle.active .icon-bar:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+.menu-toggle.active .icon-bar:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Media Query para pantallas pequeñas (móviles) */
+@media screen and (max-width: 768px) {
+    /* Mostrar el botón en móviles */
+    .menu-toggle {
+        display: block;
+    }
+    .sub-menu{
+        padding: 15px;
+        display: none; /* Ocultar el menú por defecto en móviles */
+        position: absolute; /* Posición absoluta para que se superponga */
+        top: 60px; /* Ajusta según la altura de tu header */
+        right: 15px; /* Alineado a la derecha */
+        width: 200px; /* Ancho del menú desplegable */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra para darle profundidad */
+        border-radius: 5px;
+        z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        opacity: 0; /* Inicialmente invisible */
+        transform: translateY(-20px); /* Desplazado hacia arriba inicialmente */
+        transition: opacity 0.3s ease, transform 0.3s ease; /* Transición suave */
+        background-color: #fff;
+    }
+    .sub-menu ul {
+        flex-direction: column; /* Menú en columna */
+    }
+    
+
+    /* El menú está inicialmente oculto por display: none y las propiedades de opacidad/transformación */
+    .sub-menu.active {
+        flex-direction: column;
+        display: block; /* Cuando está activo, lo mostramos */
+        opacity: 1; /* Hacemos que sea completamente visible */
+        transform: translateY(0); /* Lo movemos a su posición original */
+    }
+}

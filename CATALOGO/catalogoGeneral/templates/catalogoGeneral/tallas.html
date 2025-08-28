@@ -19,7 +19,7 @@
             </div>
 
             {% if user.is_authenticated %}
-            <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
             {% endif %}
         </div>
     </header>
@@ -34,8 +34,8 @@
 
     <div class="container">
         <ul class="nav-tabs">
-            <li><a href="{% url 'gestion_modelos' %}" class="tab-link">Modelos</a></li>
             <li><a href="{% url 'gestion_marcas' %}" class="tab-link">Marcas</a></li>
+            <li><a href="{% url 'gestion_modelos' %}" class="tab-link">Modelos</a></li>
             <li><a href="{% url 'gestion_colores' %}" class="tab-link">Colores</a></li>
             <li><a href="{% url 'gestion_tallas' %}" class="tab-link active">Tallas</a></li>
             <li><a href="{% url 'gestion_productos' %}" class="tab-link">Productos</a></li>

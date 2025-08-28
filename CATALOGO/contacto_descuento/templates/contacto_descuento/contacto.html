@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contacto - EmpiShoes</title>
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/menudesplegable.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         .contact-hero {
@@ -21,13 +22,16 @@
         <div class="header-container">
             <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
             <nav>
-                <ul>
-                    <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
-                    <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
-                    <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
-                    <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
-                    <li><a href="#" class="active">Contacto</a></li>
-                </ul>
+                <button class="menu-toggle" id="menu-toggle">☰</button>
+                <div class='sub-menu' id="mobile-menu">
+                    <ul>
+                        <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
+                        <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                        <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
+                        <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
+                        <li><a href="{% url 'contacto' %}">Contacto</a></li>
+                    </ul>
+                </div>
             </nav>
         </div>
     </header>
@@ -180,34 +184,6 @@
         </div>
     </footer>
 <!-- Al final de tu contacto.html, antes de </body> -->
-<script>
-document.getElementById('contactForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    
-    // Enviar con AJAX
-    fetch(this.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'  // Marcar como AJAX
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('¡Gracias por tu mensaje! Te responderemos pronto.');
-            // Abrir WhatsApp - esto funcionará porque es después de una acción del usuario
-            window.open(data.url_wasap, '_blank');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Si falla AJAX, enviar el formulario normalmente
-        this.submit();
-    });
-});
-</script>
+    <script src="{% static 'catalogoGeneral/js/menu.js' %}"></script>
 </body>
 </html>

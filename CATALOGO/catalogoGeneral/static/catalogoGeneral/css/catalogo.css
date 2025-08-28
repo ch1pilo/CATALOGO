@@ -438,11 +438,7 @@ footer {
 }
 
 @media (max-width: 600px) {
-    .header-container {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
+        
     .banner {
         height: 300px;
     }
@@ -1091,6 +1087,7 @@ footer {
     .info-item {
         flex-direction: column;
         text-align: center;
+        align-items: center;
     }
     
     .info-icon {
@@ -1112,7 +1109,6 @@ footer {
         grid-template-columns: 1fr;
         padding: 30px;
     }
-    
     .modal-content {
         margin: 5% auto;
         max-width: 90%;
@@ -1133,7 +1129,7 @@ footer {
 }
 
 @media (max-width: 600px) {
-
+    
     .product-card {
         height: auto;
     }

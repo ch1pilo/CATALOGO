@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Catálogo</title>
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/tabalResponsivo.css' %}">
     <style>
         .colores-container, .tallas-container {
             max-height: 300px;
@@ -59,7 +60,7 @@
             </div>
 
             {% if user.is_authenticated %}
-            <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
             {% endif %}
         </div>
     </header>
@@ -187,22 +188,27 @@
             </form>
             
             <h3>Productos Existentes</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Marca</th>
-                        <th>Modelo</th>
-                        <th>Color</th>
-                        <th>Talla</th>
-                        <th>Precio</th>
-                        <th>Stock</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-productos">
-                    <!-- Los datos se cargarán con JavaScript -->
-                </tbody>
-            </table>
+            <div class="tabla-contenedor">
+                <table >
+                    <thead>
+                        <tr>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Color</th>
+                            <th>Talla</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos">
+                        <!-- Los datos se cargarán con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="productos-cards" id="productos-cards">
+            <!-- Los datos se cargarán con JavaScript -->
         </div>
     </div>
 
@@ -506,12 +512,17 @@ function actualizarTallasOcultas() {
 }
 
 // Función para cargar y mostrar los productos existentes
+ // Función para cargar y mostrar los productos existentes (MODIFICADA)
 function cargarProductos() {
     fetch('/obtener-productos/')
         .then(response => response.json())
         .then(data => {
             const tablaProductos = document.getElementById('tabla-productos');
+            const cardsContainer = document.getElementById('productos-cards');
+            
+            // Limpiar contenedores
             tablaProductos.innerHTML = '';
+            cardsContainer.innerHTML = '';
             
             if (data.length === 0) {
                 tablaProductos.innerHTML = `
@@ -521,9 +532,15 @@ function cargarProductos() {
                         </td>
                     </tr>
                 `;
+                cardsContainer.innerHTML = `
+                    <div class="producto-card">
+                        <p>No hay productos registrados</p>
+                    </div>
+                `;
                 return;
             }
             
+            // Llenar tabla
             data.forEach(producto => {
                 const fila = document.createElement('tr');
                 fila.innerHTML = `
@@ -541,6 +558,43 @@ function cargarProductos() {
                 tablaProductos.appendChild(fila);
             });
             
+            // Llenar tarjetas para móviles
+            data.forEach(producto => {
+                const card = document.createElement('div');
+                card.className = 'producto-card';
+                card.innerHTML = `
+                    <div class="campo">
+                        <span class="etiqueta">Marca:</span>
+                        <span>${producto.marca || 'N/A'}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Modelo:</span>
+                        <span>${producto.modelo || 'N/A'}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Color:</span>
+                        <span>${producto.color || 'N/A'}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Talla:</span>
+                        <span>${producto.talla || 'N/A'}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Precio:</span>
+                        <span>$${producto.precio || '0.00'}</span>
+                    </div>
+                    <div class="campo">
+                        <span class="etiqueta">Stock:</span>
+                        <span>${obtenerEstadoStock(producto.stock)}</span>
+                    </div>
+                    <div class="acciones">
+                        <button class="btn-editar" data-id="${producto.id}">Editar</button>
+                        <button class="btn-eliminar" data-id="${producto.id}">Eliminar</button>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+            
             // Agregar event listeners para los botones de editar y eliminar
             agregarEventListenersBotones();
         })
@@ -552,6 +606,11 @@ function cargarProductos() {
                         Error al cargar los productos
                     </td>
                 </tr>
+            `;
+            document.getElementById('productos-cards').innerHTML = `
+                <div class="producto-card">
+                    <p style="color: red;">Error al cargar los productos</p>
+                </div>
             `;
         });
 }

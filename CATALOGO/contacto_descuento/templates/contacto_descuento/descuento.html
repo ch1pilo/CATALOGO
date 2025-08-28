@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Ropas - EmpiShoes</title>
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/menudesplegable.css' %}">
     <style>
         .banner {
             background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.3)), 
@@ -53,13 +54,16 @@
         <div class="header-container">
             <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
             <nav>
-                <ul>
-                    <li><a href="{% url 'catalogo_principal' %}" >Zapatos</a></li>
-                    <li><a href="{% url 'catalogo_Ropa' %}" >Ropa</a></li>
-                    <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
-                    <li><a href="{% url 'catalogo_descuento' %}" class="active">Ofertas</a></li>
-                    <li><a href="{% url 'contacto' %}">Contacto</a></li>
-                </ul>
+                <button class="menu-toggle" id="menu-toggle">☰</button>
+                <div class='sub-menu' id="mobile-menu">
+                    <ul>
+                        <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
+                        <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                        <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
+                        <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
+                        <li><a href="{% url 'contacto' %}">Contacto</a></li>
+                    </ul>
+                </div>
             </nav>
         </div>
     </header>
@@ -207,7 +211,7 @@
                                     {% endfor %}
                                 </div>
                                 
-                                <button class="btn-ver-detalle" data-product-id="123" onclick="abrirModal({{ producto.id }})">
+                                <button class="btn-ver-detalle" data-product-id="{{ producto.id }}" onclick="abrirModal({{ producto.id }})">
                                     Ver Todos los Colores
                                 </button>
                             </div>
@@ -296,6 +300,14 @@
                         <img id="modalMainImage" src="" alt="Imagen del producto">
                     </div>
                     <div class="modal-gallery-thumbs" id="modalGalleryThumbs"></div>
+                    <form id="contactForm" method="POST" action="{% url 'mensaje_wasap' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="productoSeleccionado" value="" id="productoSeleccionadoInput"> 
+                        <button type="submit" class="btn-wasap">
+                            <img src="{% static 'img/wasap.png' %}" alt="WhatsApp">
+                            <p>Comprar por WhatsApp</p>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -314,6 +326,8 @@ let colorSeleccionado = null;
 function abrirModal(productId) {
     console.log('Abriendo modal para producto:', productId);
     
+    document.getElementById('productoSeleccionadoInput').value = productId;
+
     const modal = document.getElementById('productModal');
     modal.style.display = 'block';
     setTimeout(() => {
@@ -769,5 +783,8 @@ document.addEventListener('click', function(e) {
 // Cerrar modal con el botón X
 document.querySelector('.close-modal').addEventListener('click', cerrarModal);
 </script>
+
+<script src="{% static 'catalogoGeneral/js/menu.js' %}"></script>
+
 </body>
 </html>

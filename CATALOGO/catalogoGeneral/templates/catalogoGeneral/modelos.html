@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Catálogo</title>
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/tabalResponsivo.css' %}">
 </head>
 <body>
     <header>
@@ -15,7 +16,7 @@
             </div>
 
             {% if user.is_authenticated %}
-            <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+            <a href="{% url 'logout' %}">Cerrar Sesión</a>
             {% endif %}
         </div>
     </header>
@@ -103,59 +104,60 @@
             </form>
             
             <h3>Modelos Existentes</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Marca</th>
-                        <th>Nombre</th>
-                        <th>Tipo</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for modelo in modelos %}
-                    <tr>
-                        <td>{{ modelo.id }}</td>
-                        <td>{{ modelo.marca.nombre }}</td>
-                        <td>{{ modelo.nombre }}</td>
-                        <td>
-                            {% for tipo in modelo.tipoProducto.all %}
-                                <span class="badge">{{ tipo.nombre }}</span>{% if not forloop.last %}, {% endif %}
-                            {% empty %}
-                                <span class="text-muted">Sin tipos asignados</span>
-                            {% endfor %}
-                        </td>
-                        <td class="actions">
-                            <button class="btn-edit" onclick="editarModelo({{modelo.id}})" data-id="{{ modelo.id }}">Editar</button>
-                            <button class="btn-delete" onclick=eliminarModelo({{ modelo.id }}) data-id="{{ modelo.id }}">Eliminar</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6">No hay modelos registrados</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Marca</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-modelos">
+                        {% for modelo in modelos %}
+                        <tr>
+                            <td>{{ modelo.id }}</td>
+                            <td>{{ modelo.marca.nombre }}</td>
+                            <td>{{ modelo.nombre }}</td>
+                            <td>
+                                {% for tipo in modelo.tipoProducto.all %}
+                                    <span class="badge">{{ tipo.nombre }}</span>{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    <span class="text-muted">Sin tipos asignados</span>
+                                {% endfor %}
+                            </td>
+                            <td class="actions">
+                                <button class="btn-edit" onclick="editarModelo({{modelo.id}})" data-id="{{ modelo.id }}">Editar</button>
+                                <button class="btn-delete" onclick=eliminarModelo({{ modelo.id }}) data-id="{{ modelo.id }}">Eliminar</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No hay modelos registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modelos-cards" id="modelos-cards">
+                <!-- Los datos se cargarán con JavaScript -->
+            </div>
         </div>
     </div>
 
     <script>
-
         function editarModelo(id) {
-            // Construye la URL usando la URL de Django
             window.location.href = "{% url 'editar_modelo' 0 %}".replace('0', id);
         }
         
-        // Función para eliminar (ejemplo)
         function eliminarModelo(id) {
             if (confirm('¿Estás seguro de que quieres eliminar este modelo?')) {
-                // Aquí iría la lógica para eliminar
-               window.location.href = "{% url 'eliminar_modelo' 0 %}".replace('0', id);
+                window.location.href = "{% url 'eliminar_modelo' 0 %}".replace('0', id);
             }
         }
-        // Función para cargar los tipos de producto según la marca seleccionada
+        
         function cargarTiposPorMarca() {
             const marcaId = document.getElementById('id_marca').value;
             const tablaBody = document.getElementById('tabla-body-tipos');
@@ -171,7 +173,6 @@
                 return;
             }
             
-            // Mostrar mensaje de carga
             tablaBody.innerHTML = `
                 <tr>
                     <td colspan="2" style="text-align: center;">
@@ -180,13 +181,9 @@
                 </tr>
             `;
             
-            // Hacer petición AJAX para obtener los tipos de la marca seleccionada
             fetch(`/obtener_tipos_por_marca/${marcaId}/`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data);
-                    console.log(data.tipos);
-                    console.log(data.tipos.length);
                     tablaBody.innerHTML = '';
                     
                     if (data.tipos && data.tipos.length > 0) {
@@ -201,7 +198,6 @@
                             tablaBody.appendChild(fila);
                         });
                         
-                        // Añadir event listeners a los checkboxes
                         const checkboxes = document.querySelectorAll('.tipo-checkbox');
                         checkboxes.forEach(checkbox => {
                             checkbox.addEventListener('change', actualizarTiposSeleccionados);
@@ -228,7 +224,6 @@
                 });
         }
         
-        // Función para actualizar el campo oculto con los tipos seleccionados
         function actualizarTiposSeleccionados() {
             const checkboxes = document.querySelectorAll('.tipo-checkbox:checked');
             const ids = [];
@@ -238,19 +233,130 @@
             document.getElementById('tipos-seleccionados').value = ids.join(',');
         }
         
-        // Añadir evento al formulario para asegurar que se actualicen los tipos seleccionados antes de enviar
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            form.addEventListener('submit', function(e) {
-                actualizarTiposSeleccionados();
-            });
-            
-            // Cargar tipos si ya hay una marca seleccionada (en caso de edición)
-            const marcaSelect = document.getElementById('id_marca');
-            if (marcaSelect.value) {
-                cargarTiposPorMarca();
+// REEMPLAZA la función cargarModelos() con ESTA VERSIÓN CORREGIDA:
+function cargarModelos() {
+    const tablaModelos = document.getElementById('tabla-modelos');
+    const cardsContainer = document.getElementById('modelos-cards');
+    
+    // Limpiar contenedores
+    if (tablaModelos) tablaModelos.innerHTML = '';
+    if (cardsContainer) cardsContainer.innerHTML = '';
+    
+    // Obtener las filas ORIGINALES - SELECTOR CORREGIDO
+    const filasOriginales = document.querySelectorAll('#tabla-modelos > tr');
+    
+    console.log('Filas encontradas:', filasOriginales.length);
+    
+    // Si no hay filas, mostrar mensaje de vacío
+    if (filasOriginales.length === 0) {
+        if (tablaModelos) {
+            tablaModelos.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center;">
+                        No hay modelos registrados
+                    </td>
+                </tr>
+            `;
+        }
+        if (cardsContainer) {
+            cardsContainer.innerHTML = `
+                <div class="modelo-card">
+                    <p>No hay modelos registrados</p>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    // Llenar tabla (CLONAR correctamente las filas)
+    if (tablaModelos) {
+        filasOriginales.forEach(fila => {
+            // Solo clonar si es una fila con datos (no el mensaje de vacío)
+            if (fila.cells.length >= 5) {
+                // ¡IMPORTANTE! Usar cloneNode(true) y luego appendChild
+                const filaClonada = fila.cloneNode(true);
+                tablaModelos.appendChild(filaClonada);
             }
         });
+    }
+    
+    // Llenar tarjetas para móviles
+    if (cardsContainer) {
+    filasOriginales.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        // Solo procesar filas con datos completos
+        if (celdas.length >= 5) {
+            const card = document.createElement('div');
+            card.className = 'modelo-card';
+            
+            // Obtener el texto de tipos (puede contener HTML)
+            let tiposTexto = celdas[3].textContent;
+            // Si está vacío, usar el texto alternativo
+            if (!tiposTexto.trim()) {
+                tiposTexto = 'Sin tipos asignados';
+            }
+            
+            card.innerHTML = `
+                <div class="campo">
+                    <span class="etiqueta">ID:</span>
+                    <span>${celdas[0].textContent}</span>
+                </div>
+                <div class="campo">
+                    <span class="etiqueta">Marca:</span>
+                    <span>${celdas[1].textContent}</span>
+                </div>
+                <div class="campo">
+                    <span class="etiqueta">Nombre:</span>
+                    <span>${celdas[2].textContent}</span>
+                </div>
+                <div class="campo">
+                    <span class="etiqueta">Tipos:</span>
+                    <span>${tiposTexto}</span>
+                </div>
+                <div class="acciones">
+                    <button class="btn-edit" data-id="${celdas[4].querySelector('.btn-edit').getAttribute('data-id')}">Editar</button>
+                    <button class="btn-delete" data-id="${celdas[4].querySelector('.btn-delete').getAttribute('data-id')}">Eliminar</button>
+                </div>
+            `;
+            cardsContainer.appendChild(card);
+        }
+    });
+}
+    
+    // Agregar event listeners
+    function agregarEventListenersBotones() {
+    // Para botones en la tabla
+    document.querySelectorAll('#tabla-modelos .btn-edit, #tabla-modelos .btn-delete').forEach(btn => {
+        const modeloId = btn.getAttribute('data-id');
+        if (!modeloId) return;
+        
+        if (btn.classList.contains('btn-edit')) {
+            btn.onclick = () => editarModelo(modeloId);
+        } else {
+            btn.onclick = () => {
+                if (confirm('¿Estás seguro de que quieres eliminar este modelo?')) {
+                    eliminarModelo(modeloId);
+                }
+            };
+        }
+    });
+    
+    // Para botones en las tarjetas
+    document.querySelectorAll('#modelos-cards .btn-edit, #modelos-cards .btn-delete').forEach(btn => {
+        const modeloId = btn.getAttribute('data-id');
+        if (!modeloId) return;
+        
+        if (btn.classList.contains('btn-edit')) {
+            btn.onclick = () => editarModelo(modeloId);
+        } else {
+            btn.onclick = () => {
+                if (confirm('¿Estás seguro de que quieres eliminar este modelo?')) {
+                    eliminarModelo(modeloId);
+                }
+            };
+        }
+    });
+}
     </script>
 </body>
 </html>

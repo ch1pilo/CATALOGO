@@ -40,7 +40,7 @@ body {
     padding: 8px 12px;
     border-radius: 4px;
     transition: background-color 0.3s, color 0.3s;
-
+    
 }
 
 .header-container a:hover {
@@ -48,9 +48,7 @@ body {
     color: white;
 }
 
-.header-container li{
-    list-style: none;
-}
+
 
 header {
     background: var(--primary);
@@ -339,6 +337,12 @@ tr:hover {
         flex-direction: column;
     }
     
+    .header-container a{
+        text-align: center;
+    }
+    .header-container h1{
+        text-align: left;
+    }
     .header-content {
         flex-direction: column;
         text-align: center;
