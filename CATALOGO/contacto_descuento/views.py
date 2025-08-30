@@ -1,4 +1,5 @@
 from shlex import quote
+from urllib.parse import quote_plus
 from django.shortcuts import render
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
@@ -6,8 +7,8 @@ from catalogoGeneral.models import Producto, Marca, Color
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 import json
-from urllib.parse import quote_plus
-import re
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 
 
 def catalogo_descuento(request):
@@ -213,16 +214,6 @@ def obtener_detalles_producto(request, producto_id):
 def contacto(request):
     return render(request, 'contacto.html')
 
-
-def is_ios_device(user_agent):
-    """Detecta si el dispositivo es iOS"""
-    ios_patterns = [
-        r'iphone', r'ipad', r'ipod', 
-        r'macintosh', r'mac os', r'ios'
-    ]
-    user_agent = user_agent.lower()
-    return any(re.search(pattern, user_agent) for pattern in ios_patterns)
-
 def mensaje_wasap(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -230,29 +221,32 @@ def mensaje_wasap(request):
         subject = request.POST.get('subject')
         message = request.POST.get('message')
         
-        # Obtener User-Agent para detectar el dispositivo
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        
         if name is None and phone is None and subject is None and message is None:
             producto = request.POST.get('productoSeleccionado')
             print(f'producto seleccionado {producto}')
-            objetoProducto = Producto.objects.get(id=producto)
-            print(f'producto seleccionado {objetoProducto.modelo.nombre}')
-            mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}," con un precio de {objetoProducto.precio}$'
-            mensaje_codificado = quote_plus(mensaje)
             
-            # Determinar la URL según el dispositivo
-            if is_ios_device(user_agent):
+            try:
+                objetoProducto = Producto.objects.get(id=producto)
+                print(f'producto seleccionado {objetoProducto.modelo.nombre}')
+                
+                mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}", con un precio de {objetoProducto.precio}$'
+                mensaje_codificado = quote_plus(mensaje)  # ✅ Usa quote_plus
+                
+                # ✅ CORRECCIÓN: Usa ? en lugar de & para el primer parámetro
                 url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
-            else:
-                url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'url_wasap': url_wasap,
+                        'message': 'Mensaje enviado correctamente'
+                    })
+                    
+            except Producto.DoesNotExist:
+                # Manejar error si el producto no existe
                 return JsonResponse({
-                    'success': True,
-                    'url_wasap': url_wasap,
-                    'message': 'Mensaje enviado correctamente',
-                    'es_ios': is_ios_device(user_agent)
+                    'success': False,
+                    'message': 'Producto no encontrado'
                 })
         
         # Crear mensaje para WhatsApp
@@ -260,29 +254,24 @@ def mensaje_wasap(request):
         if phone:
             mensaje_whatsapp += f" Mi teléfono es {phone}."
         
-        mensaje_codificado = quote_plus(mensaje_whatsapp)
+        mensaje_codificado = quote_plus(mensaje_whatsapp)  # ✅ Usa quote_plus
         
-        # Determinar la URL según el dispositivo
-        if is_ios_device(user_agent):
-            url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
-        else:
-            url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"
+        # ✅ CORRECCIÓN: Usa ? en lugar de & para el primer parámetro
+        url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
         
         # Detectar si es una petición AJAX
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
                 'url_wasap': url_wasap,
-                'message': 'Mensaje enviado correctamente',
-                'es_ios': is_ios_device(user_agent)
+                'message': 'Mensaje enviado correctamente'
             })
         else:
             # Para peticiones normales (sin JavaScript)
             return render(request, 'contacto.html', {
                 'enviado': True,
                 'url_wasap': url_wasap,
-                'mensaje': mensaje_whatsapp,
-                'es_ios': is_ios_device(user_agent)
+                'mensaje': mensaje_whatsapp
             })
     
     # Si es GET, mostrar el formulario normal

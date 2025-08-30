@@ -26,7 +26,6 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('¡Gracias por tu mensaje! Te responderemos pronto.');
             // Abrir WhatsApp - esto funcionará porque es después de una acción del usuario
             window.open(data.url_wasap, '_blank');
         }
