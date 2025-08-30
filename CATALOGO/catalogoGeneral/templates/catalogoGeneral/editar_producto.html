@@ -240,12 +240,12 @@
                     value="{{ producto.precio_descuento|default:'' }}">
             </div>
             
-            <div class="form-group">
+            <div class="form-group"> 
                 <label for="producto-stock">Estado de stock</label>
                 <select id="producto-stock" required name="stock">
                     <option value="0" {% if producto.stock == 0 %}selected{% endif %}>Disponible</option>
                     <option value="1" {% if producto.stock == 1 %}selected{% endif %}>Pocas Unidades</option>
-                    <option value="2" {% if producto.stock == 2 %}selected{% endif %}>No Disponible</option>
+                    <option value="2" {% if producto.stock == 2 %}selected{% endif %}>Agotadas</option>
                     <option value="3" {% if producto.stock == 3 %}selected{% endif %}>Próximamente</option>
                 </select>
             </div>

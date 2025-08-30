@@ -21,10 +21,13 @@ def catalogo_Ropa(request):
     marcas = Marca.objects.filter(tipoProducto__nombre='Prendas')
     listamarca = []
     for marca in marcas:
-        if not marca.activo:
-            print(f'{marca.nombre} no está activo')
-        else:
-            listamarca.append(marca)
+        print(f'marca : {marca.nombre} ')
+        for producto in productos:
+            print(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
+            if producto.modelo.marca.nombre == marca.nombre:
+                listamarca.append(marca)
+                print(f'marca agregada : {marca.nombre} ')
+                
     colores = Color.objects.filter(activo=True)
     
     # Aplicar filtros si se enviaron en la solicitud
@@ -55,7 +58,7 @@ def catalogo_Ropa(request):
         
     context = {
         'productos': productos,
-        'marcas': marcas,
+        'marcas': listamarca,
         'colores': colores,
     }
     
@@ -106,13 +109,39 @@ def filtrar_productosRopa(request):
                 
             if precio:
                 if precio == '0-50':
-                    productos = productos.filter(precio__lt=50, modelo__tipoProducto__nombre='Prendas')
-                elif precio == '50-100':
-                    productos = productos.filter(precio__range=(50, 100),   modelo__tipoProducto__nombre='Prendas')
-                elif precio == '100-200':
-                    productos = productos.filter(precio__range=(100, 200) , modelo__tipoProducto__nombre='Prendas')
-                elif precio == '200+':
-                    productos = productos.filter(precio__gt=200, modelo__tipoProducto__nombre='Prendas')
+                    
+                    productos = productos.filter(
+                        Q(precio__lt=50, activo=True, modelo__tipoProducto__nombre='Prendas') |
+                        Q(precio_descuento__lt=50, modelo__tipoProducto__nombre='Prendas')
+                    ).distinct()
+
+                if precio == '50-100':
+                    productos = productos.filter(
+                        modelo__tipoProducto__nombre='Prendas', 
+                        activo=True
+                    ).filter(
+                        Q(precio_descuento__isnull=False, precio_descuento__gte=50, precio_descuento__lt=100) |
+                        Q(precio_descuento__isnull=True, precio__gte=50, precio__lt=100)
+                    ).distinct()
+                             
+
+                if precio == '100-200':
+                    productos = productos.filter(
+                        modelo__tipoProducto__nombre='Prendas', 
+                        activo=True
+                    ).filter(
+                        Q(precio_descuento__isnull=False, precio_descuento__gte=100, precio_descuento__lt=200) |
+                        Q(precio_descuento__isnull=True, precio__gte=100, precio__lt=200)
+                    ).distinct()
+
+                if precio == '200+':
+                    productos = productos.filter(
+                        modelo__tipoProducto__nombre='Prendas', 
+                        activo=True
+                    ).filter(
+                        Q(precio_descuento__isnull=False, precio_descuento__gte=200,) |
+                        Q(precio_descuento__isnull=True, precio__gte=200)
+                    ).distinct()
                 print(f"Productos después de filtrar por precio: {productos.count()}")
             
            

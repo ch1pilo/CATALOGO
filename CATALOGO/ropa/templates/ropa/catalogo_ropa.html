@@ -7,6 +7,7 @@
     <title>Catálogo de Ropas - EmpiShoes</title>
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
     <link rel="stylesheet" href="{% static 'catalogoGeneral/css/menudesplegable.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         .banner {
             background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.3)), 
@@ -58,7 +59,7 @@
                 <div class='sub-menu' id="mobile-menu">
                     <ul>
                         <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
-                        <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
+                        <li><a href="{% url 'catalogo_Ropa' %}" class="active">Ropa</a></li>
                         <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
                         <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
                         <li><a href="{% url 'contacto' %}">Contacto</a></li>
@@ -186,12 +187,12 @@
                                         <div class="product-stock">
                                             {% if producto.stock == 0 %}
                                                 <span class="stock-badge available">Disponible</span>
-                                            {% elif producto.stock == 2 %}
+                                            {% elif producto.stock == 1 %}
                                                 <span class="stock-badge low">Pocas Unidades</span>
-                                            {% elif producto.stock == 3 %}
+                                            {% elif producto.stock == 2 %}
                                                 <span class="stock-badge out">Agotado</span>
-                                            {% else %}
-                                                <span class="stock-badge in-stock">Proximamente </span>
+                                            {% elif producto.stock == 3 %}
+                                                <span class="stock-badge proxi">Proximamente </span>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -304,7 +305,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="productoSeleccionado" value="" id="productoSeleccionadoInput"> 
                         <button type="submit" class="btn-wasap">
-                            <img src="{% static 'img/wasap.png' %}" alt="WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
                             <p>Comprar por WhatsApp</p>
                         </button>
                     </form>
@@ -410,12 +411,12 @@ function actualizarModalConProducto(producto) {
     let stockHTML = '';
     if (producto.stock === 0) {
         stockHTML = '<span class="stock-badge available">Disponible</span>';
-    } else if (producto.stock === 2) {
+    } else if (producto.stock === 1) {
         stockHTML = '<span class="stock-badge low">Pocas Unidades</span>';
-    } else if (producto.stock === 3) {
+    } else if (producto.stock === 2) {
         stockHTML = '<span class="stock-badge out">Agotado</span>';
-    } else {
-        stockHTML = '<span class="stock-badge in-stock">Proximamente</span>';
+    } else if (producto.stock === 3) {
+        stockHTML = '<span class="stock-badge proxi">Proximamente</span>';
     }
     document.getElementById('modalProductStock').innerHTML = stockHTML;
     
@@ -744,8 +745,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función auxiliar para el badge de stock
     function getStockBadge(stock) {
         if (stock === 0) return '<span class="stock-badge available">Disponible</span>';
-        if (stock === 2) return '<span class="stock-badge low">Pocas Unidades</span>';
-        if (stock === 3) return '<span class="stock-badge out">Agotado</span>';
+        if (stock === 1) return '<span class="stock-badge low">Pocas Unidades</span>';
+        if (stock === 2) return '<span class="stock-badge out">Agotado</span>';
+        if (stock === 3) return '<span class="stock-badge proxi">Proximamente</span>';
         return '<span class="stock-badge in-stock">Proximamente</span>';
     }
     

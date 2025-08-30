@@ -20,6 +20,7 @@ def catalogo_descuento(request):
         'imagenes'  # ← ¡Importante prefetch las imágenes!
     )
 
+
     # Obtener marcas y colores para los filtros
     productomarca = Producto.objects.filter(precio_descuento__isnull=False, modelo__marca__activo=True)
     marcas = Marca.objects.filter(id__in=productomarca.values_list('modelo__marca_id', flat=True).distinct(), activo=True)
@@ -89,6 +90,7 @@ def detalle_producto(request, producto_id):
     
     return render(request, 'detalle_producto.html', context)
 
+
 @csrf_exempt  # ¡IMPORTANTE! Añade este decorador
 def filtrar_productosDescuento(request):
     if request.method == 'POST':
@@ -111,13 +113,13 @@ def filtrar_productosDescuento(request):
                 
             if precio:
                 if precio == '0-50':
-                    productos = productos.filter(precio__lt=50, precio_descuento__isnull=False, )
+                    productos = productos.filter(precio_descuento__range=(0, 50), precio_descuento__isnull=False, )
                 elif precio == '50-100':
-                    productos = productos.filter(precio__range=(50, 100),   precio_descuento__isnull=False)
+                    productos = productos.filter(precio_descuento__range=(50, 100),   precio_descuento__isnull=False)
                 elif precio == '100-200':
-                    productos = productos.filter(precio__range=(100, 200) , precio_descuento__isnull=False)
+                    productos = productos.filter(precio_descuento__range=(100, 200) , precio_descuento__isnull=False)
                 elif precio == '200+':
-                    productos = productos.filter(precio__gt=200, precio_descuento__isnull=False)
+                    productos = productos.filter(precio_descuento__gt=200, precio_descuento__isnull=False)
                 print(f"Productos después de filtrar por precio: {productos.count()}")
             
            

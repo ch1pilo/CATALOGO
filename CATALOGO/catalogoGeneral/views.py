@@ -738,13 +738,16 @@ def catalogo_principal(request):
     )
 
     # Obtener marcas y colores para los filtros
-    marcas = Marca.objects.filter(tipoProducto__nombre='Calzado')
+    marcas = Marca.objects.filter(tipoProducto__nombre='Calzado', activo=True).distinct()
     listamarca = []
     for marca in marcas:
-        if not marca.activo:
-            print(f'{marca.nombre} no está activo')
-        else:
-            listamarca.append(marca)
+        print(f'marca : {marca.nombre} ')
+        for producto in productos:
+            print(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
+            if producto.modelo.marca.nombre == marca.nombre:
+                listamarca.append(marca)
+                print(f'marca agregada : {marca.nombre} ')
+       
     colores = Color.objects.filter(activo=True)
     
     # Aplicar filtros si se enviaron en la solicitud
@@ -765,8 +768,9 @@ def catalogo_principal(request):
     if precio_max:
         productos = productos.filter(precio__lte=precio_max)
     
-    print(f'marcas : {listamarca}')
+    print(f'marcas lista : {listamarca}')
     print(f'marcas : {type(marcas)}')
+    print(f'colores : {colores}')
     for marca in listamarca:
         print(f'{marca.nombre} hola')
 
@@ -775,7 +779,7 @@ def catalogo_principal(request):
         
     context = {
         'productos': productos,
-        'marcas': marcas,
+        'marcas': listamarca,
         'colores': colores,
     }
     
@@ -912,7 +916,7 @@ def filtrar_productos(request):
             # Filtrar productos
             productos = Producto.objects.all()
             
-            productos = productos.filter(modelo__tipoProducto__nombre='Calzado').distinct()
+            productos = productos.filter(modelo__tipoProducto__nombre='Calzado', ).distinct()
 
             if marcas:
                 productos = productos.filter(modelo__marca__id__in=marcas, modelo__tipoProducto__nombre='Calzado').distinct()
@@ -920,13 +924,39 @@ def filtrar_productos(request):
                 
             if precio:
                 if precio == '0-50':
-                    productos = productos.filter(precio__lt=50, modelo__tipoProducto__nombre='Calzado')
-                elif precio == '50-100':
-                    productos = productos.filter(precio__range=(50, 100),   modelo__tipoProducto__nombre='Calzado')
-                elif precio == '100-200':
-                    productos = productos.filter(precio__range=(100, 200) , modelo__tipoProducto__nombre='Calzado')
-                elif precio == '200+':
-                    productos = productos.filter(precio__gt=200, modelo__tipoProducto__nombre='Calzado')
+                    
+                    productos = productos.filter(
+                        Q(precio__lt=50, activo=True, modelo__tipoProducto__nombre='Calzado') |
+                        Q(precio_descuento__lt=50, modelo__tipoProducto__nombre='Calzado')
+                    ).distinct()
+
+                if precio == '50-100':
+                    productos = productos.filter(
+                        modelo__tipoProducto__nombre='Calzado', 
+                        activo=True
+                    ).filter(
+                        Q(precio_descuento__isnull=False, precio_descuento__gte=50, precio_descuento__lt=100) |
+                        Q(precio_descuento__isnull=True, precio__gte=50, precio__lt=100)
+                    ).distinct()
+                             
+
+                if precio == '100-200':
+                    productos = productos.filter(
+                        modelo__tipoProducto__nombre='Calzado', 
+                        activo=True
+                    ).filter(
+                        Q(precio_descuento__isnull=False, precio_descuento__gte=100, precio_descuento__lt=200) |
+                        Q(precio_descuento__isnull=True, precio__gte=100, precio__lt=200)
+                    ).distinct()
+
+                if precio == '200+':
+                    productos = productos.filter(
+                        modelo__tipoProducto__nombre='Calzado', 
+                        activo=True
+                    ).filter(
+                        Q(precio_descuento__isnull=False, precio_descuento__gte=200,) |
+                        Q(precio_descuento__isnull=True, precio__gte=200)
+                    ).distinct()
                 print(f"Productos después de filtrar por precio: {productos.count()}")
             
            

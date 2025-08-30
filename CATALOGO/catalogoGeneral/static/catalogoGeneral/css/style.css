@@ -128,6 +128,7 @@ label {
 
 input, select, textarea {
     width: 100%;
+    height: 80px;
     padding: 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
