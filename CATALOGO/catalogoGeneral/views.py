@@ -538,17 +538,21 @@ def guardar_producto(request):
             precio = request.POST.get('precio')
             precio_descuento = request.POST.get('descuento', None)
             stock = request.POST.get('stock', 0)
-
+            
+            print('hasta aqui todo bien')
+            
+            # Validar que no exista producto con la misma combinación
             if Producto.objects.filter(modelo_id=modelo_id, colores__id__in=colores_ids, tallas__id__in=tallas_ids).exists():
                 messages.error(request, 'El producto con la combinación seleccionada de modelo, color y talla ya existe.')
                 return redirect('gestion_productos')
             
-            
             print(f'colores_ids: {colores_ids}')
+            
             # Validaciones
             if not modelo_id or not colores_ids or not tallas_ids or not precio:
                 return JsonResponse({'success': False, 'error': 'Todos los campos son obligatorios.'})
             
+            # Limpiar IDs
             colores_ids = [color_id.strip() for color_id in colores_ids if color_id.strip()]
             tallas_ids = [talla_id.strip() for talla_id in tallas_ids if talla_id.strip()]
             
@@ -566,18 +570,47 @@ def guardar_producto(request):
             )
             
             # Agregar colores y tallas
-            for color_id in colores_ids:
-                producto.colores.add(color_id)
-            for talla_id in tallas_ids:
-                producto.tallas.add(talla_id)
+            producto.colores.add(*colores_ids)
+            producto.tallas.add(*tallas_ids)
             
-            return render(request, 'confirmacion.html', {'url' : '../../productos',
-                                                        'accion' : 'Producto Creado',
-                                                        'nombre' : producto.modelo.nombre,
-                                                         })
+            # Procesar imágenes para cada color seleccionado
+            for color_id in colores_ids:
+                file_key = f'imagen_color_{color_id}'
+                
+                if file_key in request.FILES:
+                    imagen_file = request.FILES[file_key]
+                    print(f'imagen_file: {imagen_file} para color {color_id}')
+                    
+                    # Buscar o crear imagen para este color-producto
+                    try:
+                        imagen_producto, created = ImagenProducto.objects.get_or_create(
+                            producto=producto,
+                            color_id=color_id,
+                            defaults={'imagen': imagen_file}
+                        )
+                        
+                        if not created:
+                            # Actualizar imagen existente
+                            imagen_producto.imagen = imagen_file
+                            imagen_producto.save()
+                        
+                        print(f'✅ Imagen {"creada" if created else "actualizada"} para color {color_id}')
+                    except Exception as e:
+                        print(f'❌ Error al procesar imagen para color {color_id}: {e}')
+                        # Puedes decidir si quieres continuar o retornar un error
+            else:
+                print(f'⚠️ No se encontró imagen para el color {color_id}')
+            
+            return render(request, 'confirmacion.html', {
+                'url': '../../productos',
+                'accion': 'Producto Creado',
+                'nombre': producto.modelo.nombre,
+            })
             
         except Exception as e:
-            return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
+            print(f'❌ Error general al guardar producto: {e}')
+            messages.error(request, f'Error al guardar el producto: {e}')
+            return redirect('gestion_productos')
 
 @login_required
 def editar_marca(request, marca_id):

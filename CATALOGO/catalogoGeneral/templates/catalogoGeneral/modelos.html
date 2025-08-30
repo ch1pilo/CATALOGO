@@ -256,70 +256,83 @@
         }
         
         function cargarTiposPorMarca() {
-            const marcaId = document.getElementById('id_marca').value;
-            const tablaBody = document.getElementById('tabla-body-tipos');
+    const marcaId = document.getElementById('id_marca').value;
+    const tablaBody = document.getElementById('tabla-body-tipos');
+    
+    if (!marcaId) {
+        tablaBody.innerHTML = `
+            <tr>
+                <td colspan="2" style="text-align: center;">
+                    Primero seleccione una marca
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tablaBody.innerHTML = `
+        <tr>
+            <td colspan="2" style="text-align: center;">
+                Cargando tipos disponibles...
+            </td>
+        </tr>
+    `;
+    
+    fetch(`/obtener_tipos_por_marca/${marcaId}/`)
+        .then(response => response.json())
+        .then(data => {
+            tablaBody.innerHTML = '';
             
-            if (!marcaId) {
+            if (data.tipos && data.tipos.length > 0) {
+                data.tipos.forEach(tipo => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="tipo-checkbox" value="${tipo.id}">
+                        </td>
+                        <td>${tipo.nombre}</td>
+                    `;
+                    tablaBody.appendChild(fila);
+                });
+                
+                const checkboxes = document.querySelectorAll('.tipo-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        // Si este checkbox se está marcando, desmarcar los demás
+                        if (this.checked) {
+                            checkboxes.forEach(otherCheckbox => {
+                                if (otherCheckbox !== this) {
+                                    otherCheckbox.checked = false;
+                                }
+                            });
+                        }
+                        actualizarTiposSeleccionados();
+                    });
+                });
+                
+                // Inicializar el valor oculto
+                actualizarTiposSeleccionados();
+            } else {
                 tablaBody.innerHTML = `
                     <tr>
                         <td colspan="2" style="text-align: center;">
-                            Primero seleccione una marca
+                            Esta marca no tiene tipos de producto asociados
                         </td>
                     </tr>
                 `;
-                return;
             }
-            
+        })
+        .catch(error => {
+            console.error('Error:', error);
             tablaBody.innerHTML = `
                 <tr>
-                    <td colspan="2" style="text-align: center;">
-                        Cargando tipos disponibles...
+                    <td colspan="2" style="text-align: center; color: red;">
+                        Error al cargar los tipos de producto
                     </td>
                 </tr>
             `;
-            
-            fetch(`/obtener_tipos_por_marca/${marcaId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    tablaBody.innerHTML = '';
-                    
-                    if (data.tipos && data.tipos.length > 0) {
-                        data.tipos.forEach(tipo => {
-                            const fila = document.createElement('tr');
-                            fila.innerHTML = `
-                                <td style="text-align: center;">
-                                    <input type="checkbox" class="tipo-checkbox" value="${tipo.id}">
-                                </td>
-                                <td>${tipo.nombre}</td>
-                            `;
-                            tablaBody.appendChild(fila);
-                        });
-                        
-                        const checkboxes = document.querySelectorAll('.tipo-checkbox');
-                        checkboxes.forEach(checkbox => {
-                            checkbox.addEventListener('change', actualizarTiposSeleccionados);
-                        });
-                    } else {
-                        tablaBody.innerHTML = `
-                            <tr>
-                                <td colspan="2" style="text-align: center;">
-                                    Esta marca no tiene tipos de producto asociados
-                                </td>
-                            </tr>
-                        `;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    tablaBody.innerHTML = `
-                        <tr>
-                            <td colspan="2" style="text-align: center; color: red;">
-                                Error al cargar los tipos de producto
-                            </td>
-                        </tr>
-                    `;
-                });
-        }
+        });
+}
         
         function actualizarTiposSeleccionados() {
             const checkboxes = document.querySelectorAll('.tipo-checkbox:checked');

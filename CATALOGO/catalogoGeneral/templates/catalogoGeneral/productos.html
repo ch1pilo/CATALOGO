@@ -16,7 +16,9 @@
             padding: 10px;
             margin-top: 5px;
         }
-        
+        .tabla-tallas th{
+            color: #333;
+        }
         .tabla-colores, .tabla-tallas {
             width: 100%;
             border-collapse: collapse;
@@ -49,6 +51,42 @@
             border: 1px solid #ddd;
             border-radius: 3px;
             margin-right: 5px;
+        }
+        
+        /* Nuevos estilos para imágenes */
+        .imagen-preview {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+        
+        .btn-seleccionar-imagen {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .input-imagen {
+            display: none;
+        }
+        
+        .nombre-archivo {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        .text-muted {
+            color: #6c757d;
+            font-style: italic;
         }
     </style>
 </head>
@@ -87,7 +125,7 @@
         <!-- Sección Productos -->
         <div id="productos" class="tab-content active">
             <h2>Gestión de Productos</h2>
-            <form method="POST" action="{% url 'guardar_producto' %}" id="form-producto">
+            <form method="POST" action="{% url 'guardar_producto' %}" id="form-producto" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="producto-marca">Marca</label>
@@ -106,9 +144,9 @@
                     </select>
                 </div>
                 
-                <!-- Selector de colores en tabla -->
+                <!-- Selector de colores en tabla CON IMÁGENES -->
                 <div class="form-group">
-                    <label>Seleccione los colores disponibles</label>
+                    <label>Seleccione los colores disponibles y sus imágenes</label>
                     <div class="colores-container">
                         <div class="filtro-colores">
                             <input type="text" id="filtro-colores" placeholder="Filtrar colores..." style="padding: 8px; width: 100%; margin-bottom: 10px;">
@@ -118,7 +156,9 @@
                                 <tr>
                                     <th style="width: 40px;">Seleccionar</th>
                                     <th>Color</th>
-                                    <th>Código</th>   
+                                    <th>Código</th>
+                                    <th>Imagen</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-body-colores">
@@ -132,6 +172,18 @@
                                         <td>
                                             <div class="color-preview" style="background-color: {{ color.codigo_hex }};"></div>
                                             {{ color.codigo_hex }}
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">Sin imagen</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn-seleccionar-imagen" data-color-id="{{ color.id }}">
+                                                Seleccionar imagen
+                                            </button>
+                                            <input type="file" class="input-imagen" id="imagen-color-{{ color.id }}" 
+                                                name="imagen_color_{{ color.id }}" accept="image/*" 
+                                                data-color-id="{{ color.id }}">
+                                            <span class="nombre-archivo"></span>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -151,7 +203,7 @@
                         <table class="tabla-tallas">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px;">Seleccionar</th>
+                                    <th style="width: 40px; color: #000;">Seleccionar</th>
                                     <th>Talla</th>
                                     <th>Tipo</th>   
                                 </tr>
@@ -213,486 +265,385 @@
     </div>
 
     <script>
-
         document.addEventListener('DOMContentLoaded', function() {
-    // Código de marcas y modelos
-    const marcaSelect = document.getElementById('producto-marca');
-    const modeloSelect = document.getElementById('producto-modelo');
-    
-    marcaSelect.addEventListener('change', function() {
-        const marcaId = this.value;
-        modeloSelect.innerHTML = '<option value="">Cargando modelos...</option>';
-        modeloSelect.disabled = true;
-        
-        if (marcaId) {
-            fetch(`/obtener-modelos/${marcaId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    modeloSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
-                    data.forEach(modelo => {
-                        const option = document.createElement('option');
-                        option.value = modelo.id;
-                        option.textContent = modelo.nombre;
-                        modeloSelect.appendChild(option);
-                    });
-                    modeloSelect.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    modeloSelect.innerHTML = '<option value="">Error al cargar modelos</option>';
-                });
-        } else {
-            modeloSelect.innerHTML = '<option value="">Primero seleccione una marca</option>';
-            modeloSelect.disabled = true;
-        }
-    });
-
-    // Cargar tallas
-    cargarTallas();
-
-    // Configurar filtros
-    const filtroColores = document.getElementById('filtro-colores');
-    filtroColores.addEventListener('input', filtrarColores);
-
-    const filtroTallas = document.getElementById('filtro-tallas');
-    filtroTallas.addEventListener('input', filtrarTallas);
-
-    // Manejo del formulario
-    const form = document.getElementById('form-producto');
-    form.addEventListener('submit', function(e) {
-        // Verificar que al menos un color esté seleccionado
-        const coloresSeleccionados = obtenerIdsColoresSeleccionados();
-        if (coloresSeleccionados.length === 0) {
-            e.preventDefault();
-            mostrarAlerta('Por favor, seleccione al menos un color', 'error');
-            return false;
-        }
-        
-        // Verificar que al menos una talla esté seleccionada
-        const tallasSeleccionadas = obtenerIdsTallasSeleccionadas();
-        if (tallasSeleccionadas.length === 0) {
-            e.preventDefault();
-            mostrarAlerta('Por favor, seleccione al menos una talla', 'error');
-            return false;
-        }
-        
-        // Actualizar campos ocultos antes de enviar
-        actualizarColoresOcultos();
-        actualizarTallasOcultas();
-        
-        return true;
-    });
-});
-
-// Funciones para colores
-function filtrarColores() {
-    const filtro = document.getElementById('filtro-colores').value.toLowerCase();
-    const filas = document.querySelectorAll('#tabla-body-colores tr');
-    
-    filas.forEach(fila => {
-        const textoFila = fila.textContent.toLowerCase();
-        if (textoFila.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
-    });
-}
-
-function obtenerIdsColoresSeleccionados() {
-    const checkboxes = document.querySelectorAll('.color-checkbox:checked');
-    const ids = [];
-    checkboxes.forEach(checkbox => {
-        ids.push(checkbox.value);
-    });
-    return ids;
-}
-
-function actualizarColoresOcultos() {
-    const ids = obtenerIdsColoresSeleccionados();
-    document.getElementById('colores-seleccionados').value = ids.join(',');
-}
-
-// Funciones para tallas (mantener las existentes)
-function cargarTallas() {
-    fetch('/obtener-tallas/')
-        .then(response => response.json())
-        .then(data => {
-            const tablaBody = document.getElementById('tabla-body-tallas');
-            tablaBody.innerHTML = '';
+            // Código de marcas y modelos
+            const marcaSelect = document.getElementById('producto-marca');
+            const modeloSelect = document.getElementById('producto-modelo');
             
-            data.forEach(talla => {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td style="text-align: center;">
-                        <input type="checkbox" class="talla-checkbox" value="${talla.id}" 
-                               data-talla="${talla.valor}" data-categoria="${talla.tipo || 'N/A'}">
-                    </td>
-                    <td>${talla.valor}</td>
-                    <td>${talla.tipo || 'N/A'}</td>
-                `;
-                tablaBody.appendChild(fila);
+            marcaSelect.addEventListener('change', function() {
+                const marcaId = this.value;
+                modeloSelect.innerHTML = '<option value="">Cargando modelos...</option>';
+                modeloSelect.disabled = true;
+                
+                if (marcaId) {
+                    fetch(`/obtener-modelos/${marcaId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            modeloSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+                            data.forEach(modelo => {
+                                const option = document.createElement('option');
+                                option.value = modelo.id;
+                                option.textContent = modelo.nombre;
+                                modeloSelect.appendChild(option);
+                            });
+                            modeloSelect.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            modeloSelect.innerHTML = '<option value="">Error al cargar modelos</option>';
+                        });
+                } else {
+                    modeloSelect.innerHTML = '<option value="">Primero seleccione una marca</option>';
+                    modeloSelect.disabled = true;
+                }
             });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('tabla-body-tallas').innerHTML = `
-                <tr>
-                    <td colspan="4" style="text-align: center; color: red;">
-                        Error al cargar las tallas
-                    </td>
-                </tr>
-            `;
-        });
-}
 
-function filtrarTallas() {
-    const filtro = document.getElementById('filtro-tallas').value.toLowerCase();
-    const filas = document.querySelectorAll('#tabla-body-tallas tr');
-    
-    filas.forEach(fila => {
-        const textoFila = fila.textContent.toLowerCase();
-        if (textoFila.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
-    });
-}
+            // Cargar tallas
+            cargarTallas();
 
-function obtenerIdsTallasSeleccionadas() {
-    const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
-    const ids = [];
-    checkboxes.forEach(checkbox => {
-        ids.push(checkbox.value);
-    });
-    return ids;
-}
+            // Configurar filtros
+            const filtroColores = document.getElementById('filtro-colores');
+            filtroColores.addEventListener('input', filtrarColores);
 
-
-
-document.addEventListener('DOMContentLoaded', function() {
-    // ✅ MANTIENE ESTO (tu código actual de marcas y modelos)
-    const marcaSelect = document.getElementById('producto-marca');
-    const modeloSelect = document.getElementById('producto-modelo');
-    
-    marcaSelect.addEventListener('change', function() {
-        const marcaId = this.value;
-        modeloSelect.innerHTML = '<option value="">Cargando modelos...</option>';
-        modeloSelect.disabled = true;
-        
-        if (marcaId) {
-            fetch(`/obtener-modelos/${marcaId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    modeloSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
-                    data.forEach(modelo => {
-                        const option = document.createElement('option');
-                        option.value = modelo.id;
-                        option.textContent = modelo.nombre;
-                        modeloSelect.appendChild(option);
-                    });
-                    modeloSelect.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    modeloSelect.innerHTML = '<option value="">Error al cargar modelos</option>';
-                });
-        } else {
-            modeloSelect.innerHTML = '<option value="">Primero seleccione una marca</option>';
-            modeloSelect.disabled = true;
-        }
-    });
-
-    // ✅ MANTIENE ESTO (tu función de cargar tallas)
-    cargarTallas();
-
-    // ✅ AGREGA ESTO NUEVO (manejo del formulario)
-    const form = document.getElementById('form-producto');
-    form.addEventListener('submit', function(e) {
-        // Verificar que al menos una talla esté seleccionada
-        const tallasSeleccionadas = obtenerIdsTallasSeleccionadas();
-        if (tallasSeleccionadas.length === 0) {
-            e.preventDefault();
-            alert('Por favor, seleccione al menos una talla');
-            return false;
-        }
-        
-        // Actualizar el campo oculto antes de enviar
-        actualizarTallasOcultas();
-        
-        return true;
-    });
-});
-
-// ✅ MANTIENE ESTO (tu función cargarTallas)
-function cargarTallas() {
-    console.log('Cargando tallas...');
-    fetch('/obtener-tallas/')
-        .then(response => response.json())
-        .then(data => {
-            const tablaBody = document.getElementById('tabla-body-tallas');
-            tablaBody.innerHTML = '';
-            
-            data.forEach(talla => {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td style="text-align: center;">
-                        <input type="checkbox" class="talla-checkbox" value="${talla.id}" 
-                               data-talla="${talla.valor}" data-categoria="${talla.tipo || 'N/A'}">
-                    </td>
-                    <td>${talla.valor}</td>
-                    <td>${talla.tipo || 'N/A'}</td>
-                `;
-                tablaBody.appendChild(fila);
-            });
-            
-            // ✅ MANTIENE ESTO (tu filtro de tallas)
             const filtroTallas = document.getElementById('filtro-tallas');
             filtroTallas.addEventListener('input', filtrarTallas);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('tabla-body-tallas').innerHTML = `
-                <tr>
-                    <td colspan="4" style="text-align: center; color: red;">
-                        Error al cargar las tallas
-                    </td>
-                </tr>
-            `;
-        });
-}
 
-// ✅ MANTIENE ESTO (tu función filtrarTallas)
-function filtrarTallas() {
-    const filtro = document.getElementById('filtro-tallas').value.toLowerCase();
-    const filas = document.querySelectorAll('#tabla-body-tallas tr');
-    
-    filas.forEach(fila => {
-        const textoFila = fila.textContent.toLowerCase();
-        if (textoFila.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
-    });
-}
-
-// ✅ MANTIENE ESTO (tu función obtenerTallasSeleccionadas)
-function obtenerTallasSeleccionadas() {
-    const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
-    const tallasSeleccionadas = [];
-    
-    checkboxes.forEach(checkbox => {
-        tallasSeleccionadas.push({
-            id: checkbox.value,
-            nombre: checkbox.getAttribute('data-talla'),
-            categoria: checkbox.getAttribute('data-categoria')
-        });
-    });
-    
-    return tallasSeleccionadas;
-}
-
-// ✅ AGREGA ESTAS 2 FUNCIONES NUEVAS
-function obtenerIdsTallasSeleccionadas() {
-    const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
-    const ids = [];
-    
-    checkboxes.forEach(checkbox => {
-        ids.push(checkbox.value);
-    });
-    
-    return ids;
-}
-
-function actualizarTallasOcultas() {
-    const ids = obtenerIdsTallasSeleccionadas();
-    document.getElementById('tallas-seleccionadas').value = ids.join(',');
-}
-
-// Función para cargar y mostrar los productos existentes
- // Función para cargar y mostrar los productos existentes (MODIFICADA)
-function cargarProductos() {
-    fetch('/obtener-productos/')
-        .then(response => response.json())
-        .then(data => {
-            const tablaProductos = document.getElementById('tabla-productos');
-            const cardsContainer = document.getElementById('productos-cards');
-            
-            // Limpiar contenedores
-            tablaProductos.innerHTML = '';
-            cardsContainer.innerHTML = '';
-            
-            if (data.length === 0) {
-                tablaProductos.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center;">
-                            No hay productos registrados
-                        </td>
-                    </tr>
-                `;
-                cardsContainer.innerHTML = `
-                    <div class="producto-card">
-                        <p>No hay productos registrados</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Llenar tabla
-            data.forEach(producto => {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td>${producto.marca || 'N/A'}</td>
-                    <td>${producto.modelo || 'N/A'}</td>
-                    <td>${producto.color || 'N/A'}</td>
-                    <td>${producto.talla || 'N/A'}</td>
-                    <td>$${producto.precio || '0.00'}</td>
-                    <td>${obtenerEstadoStock(producto.stock)}</td>
-                    <td>
-                        <button class="btn-editar" data-id="${producto.id}">Editar</button>
-                        <button class="btn-eliminar" data-id="${producto.id}">Eliminar</button>
-                    </td>
-                `;
-                tablaProductos.appendChild(fila);
-            });
-            
-            // Llenar tarjetas para móviles
-            data.forEach(producto => {
-                const card = document.createElement('div');
-                card.className = 'producto-card';
-                card.innerHTML = `
-                    <div class="campo">
-                        <span class="etiqueta">Marca:</span>
-                        <span>${producto.marca || 'N/A'}</span>
-                    </div>
-                    <div class="campo">
-                        <span class="etiqueta">Modelo:</span>
-                        <span>${producto.modelo || 'N/A'}</span>
-                    </div>
-                    <div class="campo">
-                        <span class="etiqueta">Color:</span>
-                        <span>${producto.color || 'N/A'}</span>
-                    </div>
-                    <div class="campo">
-                        <span class="etiqueta">Talla:</span>
-                        <span>${producto.talla || 'N/A'}</span>
-                    </div>
-                    <div class="campo">
-                        <span class="etiqueta">Precio:</span>
-                        <span>$${producto.precio || '0.00'}</span>
-                    </div>
-                    <div class="campo">
-                        <span class="etiqueta">Stock:</span>
-                        <span>${obtenerEstadoStock(producto.stock)}</span>
-                    </div>
-                    <div class="acciones">
-                        <button class="btn-editar" data-id="${producto.id}">Editar</button>
-                        <button class="btn-eliminar" data-id="${producto.id}">Eliminar</button>
-                    </div>
-                `;
-                cardsContainer.appendChild(card);
-            });
-            
-            // Agregar event listeners para los botones de editar y eliminar
-            agregarEventListenersBotones();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('tabla-productos').innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; color: red;">
-                        Error al cargar los productos
-                    </td>
-                </tr>
-            `;
-            document.getElementById('productos-cards').innerHTML = `
-                <div class="producto-card">
-                    <p style="color: red;">Error al cargar los productos</p>
-                </div>
-            `;
-        });
-}
-
-// Función para convertir el valor numérico de stock a texto
-function obtenerEstadoStock(valorStock) {
-    const estados = {
-        0: 'Disponible',
-        1: 'Pocas Unidades',
-        2: 'No Disponible',
-        3: 'Próximamente'
-    };
-    return estados[valorStock] || 'Desconocido';
-}
-
-// Función para agregar event listeners a los botones de editar y eliminar
-function agregarEventListenersBotones() {
-    // Botones de editar
-    document.querySelectorAll('.btn-editar').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const productoId = this.getAttribute('data-id');
-            editarProducto(productoId);
-        });
-    });
-    
-    // Botones de eliminar
-    document.querySelectorAll('.btn-eliminar').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const productoId = this.getAttribute('data-id');
-            eliminarProducto(productoId);
-        });
-    });
-}
-
-// Función para editar un producto (debes implementarla según tus necesidades)
-function editarProducto(id) {
-    // Redireccionar a la página de edición del producto
-    window.location.href = '/editar-producto/' + id + '/';
-}
-
-// Función para eliminar un producto
-function eliminarProducto(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-       
-        window.location.href = '/eliminar-producto/' + id + '/';
-    }
-}
-
-// Función para obtener el token CSRF
-function getCSRFToken() {
-    const cookieValue = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrftoken='))
-        ?.split('=')[1];
-    return cookieValue;
-}
-
-// Función para mostrar alertas
-function mostrarAlerta(mensaje, tipo) {
-    const alertBox = document.getElementById('alert-box');
-    alertBox.textContent = mensaje;
-    alertBox.className = `alert ${tipo}`;
-    alertBox.style.display = 'block';
-    
-    setTimeout(() => {
-        alertBox.style.display = 'none';
-    }, 3000);
-}
-
-// Llamar a cargarProductos cuando el documento esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    cargarProductos();
-    
-    // También recargar productos después de guardar uno nuevo
-    const form = document.getElementById('form-producto');
-    form.addEventListener('submit', function() {
-        // Esperar un momento para que el servidor procese la solicitud
-        setTimeout(() => {
-            cargarProductos();
-        }, 500);
+            // Botones para seleccionar imágenes
+document.querySelectorAll('.btn-seleccionar-imagen').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const colorId = this.getAttribute('data-color-id');
+        document.getElementById('imagen-color-' + colorId).click();
     });
 });
+
+// Mostrar nombre de archivo cuando se selecciona una imagen
+document.querySelectorAll('.input-imagen').forEach(input => {
+    input.addEventListener('change', function() {
+        const colorId = this.getAttribute('data-color-id');
+        const fileName = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado';
+        
+        // Actualizar el texto del nombre del archivo
+        let fileNameSpan = this.parentElement.querySelector('.nombre-archivo');
+        if (!fileNameSpan) {
+            fileNameSpan = document.createElement('span');
+            fileNameSpan.className = 'nombre-archivo';
+            this.parentElement.appendChild(fileNameSpan);
+        }
+        fileNameSpan.textContent = fileName;
+        
+        // Si hay una imagen, actualizar la vista previa
+        if (this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Encontrar la fila específica para este color
+                const fila = document.querySelector(`tr input[data-color-id="${colorId}"]`).closest('tr');
+                // Buscar la celda de imagen (cuarta columna)
+                const tdImagen = fila.querySelector('td:nth-child(4)');
+                
+                // Limpiar contenido previo
+                tdImagen.innerHTML = '';
+                
+                // Crear y agregar la imagen preview
+                const imgPreview = document.createElement('img');
+                imgPreview.className = 'imagen-preview';
+                imgPreview.src = e.target.result;
+                imgPreview.setAttribute('data-color-id', colorId);
+                
+                tdImagen.appendChild(imgPreview);
+            };
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+});
+
+            // Manejo del formulario
+            const form = document.getElementById('form-producto');
+            form.addEventListener('submit', function(e) {
+                // Verificar que al menos un color esté seleccionado
+                const coloresSeleccionados = obtenerIdsColoresSeleccionados();
+                if (coloresSeleccionados.length === 0) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, seleccione al menos un color', 'error');
+                    return false;
+                }
+                
+                // Verificar que al menos una talla esté seleccionada
+                const tallasSeleccionadas = obtenerIdsTallasSeleccionadas();
+                if (tallasSeleccionadas.length === 0) {
+                    e.preventDefault();
+                    mostrarAlerta('Por favor, seleccione al menos una talla', 'error');
+                    return false;
+                }
+                
+                // Actualizar campos ocultos antes de enviar
+                actualizarColoresOcultos();
+                actualizarTallasOcultas();
+                
+                return true;
+            });
+        });
+
+        // Funciones para colores
+        function filtrarColores() {
+            const filtro = document.getElementById('filtro-colores').value.toLowerCase();
+            const filas = document.querySelectorAll('#tabla-body-colores tr');
+            
+            filas.forEach(fila => {
+                const textoFila = fila.textContent.toLowerCase();
+                if (textoFila.includes(filtro)) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+        }
+
+        function obtenerIdsColoresSeleccionados() {
+            const checkboxes = document.querySelectorAll('.color-checkbox:checked');
+            const ids = [];
+            checkboxes.forEach(checkbox => {
+                ids.push(checkbox.value);
+            });
+            return ids;
+        }
+
+        function actualizarColoresOcultos() {
+            const ids = obtenerIdsColoresSeleccionados();
+            document.getElementById('colores-seleccionados').value = ids.join(',');
+        }
+
+        // Funciones para tallas
+        function cargarTallas() {
+            fetch('/obtener-tallas/')
+                .then(response => response.json())
+                .then(data => {
+                    const tablaBody = document.getElementById('tabla-body-tallas');
+                    tablaBody.innerHTML = '';
+                    
+                    data.forEach(talla => {
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                            <td style="text-align: center;">
+                                <input type="checkbox" class="talla-checkbox" value="${talla.id}" 
+                                       data-talla="${talla.valor}" data-categoria="${talla.tipo || 'N/A'}">
+                            </td>
+                            <td>${talla.valor}</td>
+                            <td>${talla.tipo || 'N/A'}</td>
+                        `;
+                        tablaBody.appendChild(fila);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('tabla-body-tallas').innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: red;">
+                                Error al cargar las tallas
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        function filtrarTallas() {
+            const filtro = document.getElementById('filtro-tallas').value.toLowerCase();
+            const filas = document.querySelectorAll('#tabla-body-tallas tr');
+            
+            filas.forEach(fila => {
+                const textoFila = fila.textContent.toLowerCase();
+                if (textoFila.includes(filtro)) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+        }
+
+        function obtenerIdsTallasSeleccionadas() {
+            const checkboxes = document.querySelectorAll('.talla-checkbox:checked');
+            const ids = [];
+            checkboxes.forEach(checkbox => {
+                ids.push(checkbox.value);
+            });
+            return ids;
+        }
+
+        function actualizarTallasOcultas() {
+            const ids = obtenerIdsTallasSeleccionadas();
+            document.getElementById('tallas-seleccionadas').value = ids.join(',');
+        }
+
+        // Función para cargar y mostrar los productos existentes
+        function cargarProductos() {
+            fetch('/obtener-productos/')
+                .then(response => response.json())
+                .then(data => {
+                    const tablaProductos = document.getElementById('tabla-productos');
+                    const cardsContainer = document.getElementById('productos-cards');
+                    
+                    // Limpiar contenedores
+                    tablaProductos.innerHTML = '';
+                    cardsContainer.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        tablaProductos.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align: center;">
+                                    No hay productos registrados
+                                </td>
+                            </tr>
+                        `;
+                        cardsContainer.innerHTML = `
+                            <div class="producto-card">
+                                <p>No hay productos registrados</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Llenar tabla
+                    data.forEach(producto => {
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                            <td>${producto.marca || 'N/A'}</td>
+                            <td>${producto.modelo || 'N/A'}</td>
+                            <td>${producto.color || 'N/A'}</td>
+                            <td>${producto.talla || 'N/A'}</td>
+                            <td>$${producto.precio || '0.00'}</td>
+                            <td>${obtenerEstadoStock(producto.stock)}</td>
+                            <td>
+                                <button class="btn-editar" data-id="${producto.id}">Editar</button>
+                                <button class="btn-eliminar" data-id="${producto.id}">Eliminar</button>
+                            </td>
+                        `;
+                        tablaProductos.appendChild(fila);
+                    });
+                    
+                    // Llenar tarjetas para móviles
+                    data.forEach(producto => {
+                        const card = document.createElement('div');
+                        card.className = 'producto-card';
+                        card.innerHTML = `
+                            <div class="campo">
+                                <span class="etiqueta">Marca:</span>
+                                <span>${producto.marca || 'N/A'}</span>
+                            </div>
+                            <div class="campo">
+                                <span class="etiqueta">Modelo:</span>
+                                <span>${producto.modelo || 'N/A'}</span>
+                            </div>
+                            <div class="campo">
+                                <span class="etiqueta">Color:</span>
+                                <span>${producto.color || 'N/A'}</span>
+                            </div>
+                            <div class="campo">
+                                <span class="etiqueta">Talla:</span>
+                                <span>${producto.talla || 'N/A'}</span>
+                            </div>
+                            <div class="campo">
+                                <span class="etiqueta">Precio:</span>
+                                <span>$${producto.precio || '0.00'}</span>
+                            </div>
+                            <div class="campo">
+                                <span class="etiqueta">Stock:</span>
+                                <span>${obtenerEstadoStock(producto.stock)}</span>
+                            </div>
+                            <div class="acciones">
+                                <button class="btn-editar" data-id="${producto.id}">Editar</button>
+                                <button class="btn-eliminar" data-id="${producto.id}">Eliminar</button>
+                            </div>
+                        `;
+                        cardsContainer.appendChild(card);
+                    });
+                    
+                    // Agregar event listeners para los botones de editar y eliminar
+                    agregarEventListenersBotones();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('tabla-productos').innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: red;">
+                                Error al cargar los productos
+                            </td>
+                        </tr>
+                    `;
+                    document.getElementById('productos-cards').innerHTML = `
+                        <div class="producto-card">
+                            <p style="color: red;">Error al cargar los productos</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Función para convertir el valor numérico de stock a texto
+        function obtenerEstadoStock(valorStock) {
+            const estados = {
+                0: 'Disponible',
+                1: 'Pocas Unidades',
+                2: 'No Disponible',
+                3: 'Próximamente'
+            };
+            return estados[valorStock] || 'Desconocido';
+        }
+
+        // Función para agregar event listeners a los botones de editar y eliminar
+        function agregarEventListenersBotones() {
+            // Botones de editar
+            document.querySelectorAll('.btn-editar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productoId = this.getAttribute('data-id');
+                    editarProducto(productoId);
+                });
+            });
+            
+            // Botones de eliminar
+            document.querySelectorAll('.btn-eliminar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productoId = this.getAttribute('data-id');
+                    eliminarProducto(productoId);
+                });
+            });
+        }
+
+        // Función para editar un producto
+        function editarProducto(id) {
+            // Redireccionar a la página de edición del producto
+            window.location.href = '/editar-producto/' + id + '/';
+        }
+
+        // Función para eliminar un producto
+        function eliminarProducto(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+                window.location.href = '/eliminar-producto/' + id + '/';
+            }
+        }
+
+        // Función para mostrar alertas
+        function mostrarAlerta(mensaje, tipo) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.textContent = mensaje;
+            alertBox.className = `alert ${tipo}`;
+            alertBox.style.display = 'block';
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // Llamar a cargarProductos cuando el documento esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarProductos();
+            
+            // También recargar productos después de guardar uno nuevo
+            const form = document.getElementById('form-producto');
+            form.addEventListener('submit', function() {
+                // Esperar un momento para que el servidor procese la solicitud
+                setTimeout(() => {
+                    cargarProductos();
+                }, 500);
+            });
+        });
     </script>
 </body>
 </html>
