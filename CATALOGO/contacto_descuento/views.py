@@ -6,8 +6,8 @@ from catalogoGeneral.models import Producto, Marca, Color
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 import json
-from django.template.loader import render_to_string
-from django.utils.safestring import mark_safe
+from urllib.parse import quote_plus
+import re
 
 
 def catalogo_descuento(request):
@@ -214,47 +214,75 @@ def contacto(request):
     return render(request, 'contacto.html')
 
 
+def is_ios_device(user_agent):
+    """Detecta si el dispositivo es iOS"""
+    ios_patterns = [
+        r'iphone', r'ipad', r'ipod', 
+        r'macintosh', r'mac os', r'ios'
+    ]
+    user_agent = user_agent.lower()
+    return any(re.search(pattern, user_agent) for pattern in ios_patterns)
+
 def mensaje_wasap(request):
     if request.method == 'POST':
         name = request.POST.get('name')
         phone = request.POST.get('phone')
         subject = request.POST.get('subject')
         message = request.POST.get('message')
-        if name==None and phone==None and subject==None and message==None:
+        
+        # Obtener User-Agent para detectar el dispositivo
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        if name is None and phone is None and subject is None and message is None:
             producto = request.POST.get('productoSeleccionado')
             print(f'producto seleccionado {producto}')
             objetoProducto = Producto.objects.get(id=producto)
             print(f'producto seleccionado {objetoProducto.modelo.nombre}')
             mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}," con un precio de {objetoProducto.precio}$'
-            enviar = mensaje.replace(' ', '%20')
-            url_wasap = f"https://api.whatsapp.com/send?phone=584246018457&text={enviar}"
+            mensaje_codificado = quote_plus(mensaje)
+            
+            # Determinar la URL según el dispositivo
+            if is_ios_device(user_agent):
+                url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
+            else:
+                url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"
+            
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
                     'url_wasap': url_wasap,
-                    'message': 'Mensaje enviado correctamente'
+                    'message': 'Mensaje enviado correctamente',
+                    'es_ios': is_ios_device(user_agent)
                 })
+        
         # Crear mensaje para WhatsApp
         mensaje_whatsapp = f"Hola, mi nombre es {name}. Asunto: {subject}. {message}"
         if phone:
             mensaje_whatsapp += f" Mi teléfono es {phone}."
         
-        mensaje_codificado = quote(mensaje_whatsapp)
-        url_wasap = f"https://api.whatsapp.com/send?phone=584246018457&text={mensaje_codificado}"
+        mensaje_codificado = quote_plus(mensaje_whatsapp)
+        
+        # Determinar la URL según el dispositivo
+        if is_ios_device(user_agent):
+            url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
+        else:
+            url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"
         
         # Detectar si es una petición AJAX
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
                 'url_wasap': url_wasap,
-                'message': 'Mensaje enviado correctamente'
+                'message': 'Mensaje enviado correctamente',
+                'es_ios': is_ios_device(user_agent)
             })
         else:
             # Para peticiones normales (sin JavaScript)
             return render(request, 'contacto.html', {
                 'enviado': True,
                 'url_wasap': url_wasap,
-                'mensaje': mensaje_whatsapp
+                'mensaje': mensaje_whatsapp,
+                'es_ios': is_ios_device(user_agent)
             })
     
     # Si es GET, mostrar el formulario normal

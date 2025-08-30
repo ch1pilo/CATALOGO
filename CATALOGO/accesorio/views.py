@@ -25,8 +25,9 @@ def catalogo_accesorio(request):
         for producto in productos:
             print(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
             if producto.modelo.marca.nombre == marca.nombre:
-                listamarca.append(marca)
-                print(f'marca agregada : {marca.nombre} ')
+                if marca not in listamarca:
+                    listamarca.append(marca)
+                    print(f'marca agregada : {marca.nombre} ')
 
     colores = Color.objects.filter(activo=True)
     

@@ -1179,7 +1179,10 @@ footer {
     }
     
     .flip-card {
-        height: 350px; /* Reducir altura para móviles */
+        height: 320px; /* Reducir altura para móviles */
+    }
+    .product-price {
+    height: 31px;
     }
     
     .product-image {
