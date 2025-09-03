@@ -15,24 +15,23 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
     
     const formData = new FormData(this);
     
-    // Enviar con AJAX
     fetch(this.action, {
         method: 'POST',
         body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'  // Marcar como AJAX
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Abrir WhatsApp - esto funcionará porque es después de una acción del usuario
-            window.open(data.url_wasap, '_blank');
+            alert('¡Gracias por tu mensaje! Te responderemos pronto.');
+            // ✅ Redirección directa, más confiable en iOS
+            window.location.href = data.url_wasap;
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        // Si falla AJAX, enviar el formulario normalmente
-        this.submit();
+        this.submit(); // Fallback
     });
 });

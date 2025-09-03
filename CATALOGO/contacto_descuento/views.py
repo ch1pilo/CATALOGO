@@ -216,6 +216,13 @@ def contacto(request):
 
 def mensaje_wasap(request):
     if request.method == 'POST':
+        # Detectar si es iOS
+        user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+        es_ios = any(term in user_agent for term in ['iphone', 'ipad', 'ipod', 'ios'])
+        
+        print(f"User-Agent: {user_agent}")
+        print(f"Es iOS: {es_ios}")
+        
         name = request.POST.get('name')
         phone = request.POST.get('phone')
         subject = request.POST.get('subject')
@@ -223,47 +230,60 @@ def mensaje_wasap(request):
         
         if name is None and phone is None and subject is None and message is None:
             producto = request.POST.get('productoSeleccionado')
-            print(f'producto seleccionado {producto}')
+            print(f'Producto seleccionado: {producto}')
             
             try:
                 objetoProducto = Producto.objects.get(id=producto)
-                print(f'producto seleccionado {objetoProducto.modelo.nombre}')
+                print(f'Producto: {objetoProducto.modelo.nombre}')
                 
                 mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}", con un precio de {objetoProducto.precio}$'
-                mensaje_codificado = quote_plus(mensaje)  # ✅ Usa quote_plus
+                mensaje_codificado = quote_plus(mensaje)
                 
-                # ✅ CORRECCIÓN: Usa ? en lugar de & para el primer parámetro
-                url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
+                # Generar URL según el dispositivo
+                if es_ios:
+                    # ✅ URL que SÍ funciona en iOS
+                    url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
+                    print(f'URL iOS: {url_wasap}')
+                else:
+                    # ✅ URL para Android y otros
+                    url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"
                 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': True,
                         'url_wasap': url_wasap,
+                        'es_ios': es_ios,
                         'message': 'Mensaje enviado correctamente'
                     })
                     
+
             except Producto.DoesNotExist:
-                # Manejar error si el producto no existe
                 return JsonResponse({
                     'success': False,
                     'message': 'Producto no encontrado'
                 })
         
-        # Crear mensaje para WhatsApp
+        # Crear mensaje normal
         mensaje_whatsapp = f"Hola, mi nombre es {name}. Asunto: {subject}. {message}"
         if phone:
             mensaje_whatsapp += f" Mi teléfono es {phone}."
         
-        mensaje_codificado = quote_plus(mensaje_whatsapp)  # ✅ Usa quote_plus
+        mensaje_codificado = quote_plus(mensaje_whatsapp)
         
-        # ✅ CORRECCIÓN: Usa ? en lugar de & para el primer parámetro
-        url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
+        # Generar URL según el dispositivo
+        if es_ios:
+            # ✅ URL que SÍ funciona en iOS
+            url_wasap = f"https://web.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}&app_absent=0"
+        else:
+            # ✅ URL para Android y otros
+            url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"
         
         # Detectar si es una petición AJAX
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
                 'url_wasap': url_wasap,
+                'es_ios': es_ios,
                 'message': 'Mensaje enviado correctamente'
             })
         else:
@@ -271,7 +291,8 @@ def mensaje_wasap(request):
             return render(request, 'contacto.html', {
                 'enviado': True,
                 'url_wasap': url_wasap,
-                'mensaje': mensaje_whatsapp
+                'mensaje': mensaje_whatsapp,
+                'es_ios': es_ios
             })
     
     # Si es GET, mostrar el formulario normal
