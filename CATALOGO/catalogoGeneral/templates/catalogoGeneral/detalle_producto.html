@@ -1,0 +1,133 @@
+{% extends 'base_publico.html' %}
+{% load static %}
+{% comment %}
+Página pública de un producto (enlace compartible). Ruta canónica: catalogoGeneral -> /producto/<id>/ (name: zapato_detalle).
+Estado de stock (como lo guarda el panel): 0 Disponible, 1 Pocas unidades, 2 Agotado, 3 Próximamente.
+{% endcomment %}
+{% block title %}{{ producto.modelo.nombre }} · {{ producto.modelo.marca.nombre }} · EMPI Shoes{% endblock %}
+{% block body_class %}page-producto{% endblock %}
+
+{% block meta_extra %}{% with origen=request.scheme|add:'://'|add:request.get_host %}{% with imagen=producto.imagenes.first %}
+<meta name="description" content="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }} a ${{ producto.precio_descuento|default:producto.precio|floatformat:'-2u' }}. Pídelo por WhatsApp en EMPI Shoes.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EMPI Shoes">
+<meta property="og:title" content="{{ producto.modelo.nombre }} · {{ producto.modelo.marca.nombre }} · EMPI Shoes">
+<meta property="og:description" content="${{ producto.precio_descuento|default:producto.precio|floatformat:'-2u' }} — Pídelo por WhatsApp en EMPI Shoes.">
+<meta property="og:image" content="{% if imagen %}{{ origen }}{{ imagen.imagen.url }}{% else %}{{ origen }}{% static 'img/logoPng.webp' %}{% endif %}">
+<meta property="og:url" content="{{ origen }}{% url 'zapato_detalle' producto.id %}">
+<meta name="twitter:card" content="summary_large_image">
+{% endwith %}{% endwith %}{% endblock %}
+
+{% block header_left %}<a class="icon-btn header-back" href="{% url 'catalogo_principal' %}" aria-label="Volver al catálogo"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>{% endblock %}
+
+{% block header_right %}<button class="icon-btn header-share js-share" type="button" aria-label="Compartir este producto"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg></button>{% endblock %}
+
+{% block contenido %}
+{% with origen=request.scheme|add:'://'|add:request.get_host %}
+{% with primero=producto.colores.all.0 %}
+<div id="producto" data-canonical="{{ origen }}{% url 'zapato_detalle' producto.id %}" data-title="{{ producto.modelo.nombre }} · {{ producto.modelo.marca.nombre }} · EMPI Shoes" data-text="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }} — ${{ producto.precio_descuento|default:producto.precio|floatformat:'-2u' }}" data-logo="{% static 'img/logoPng.webp' %}">
+  <div class="container">
+    <nav class="crumbs" aria-label="Ruta">
+      <a href="{% url 'catalogo_principal' %}">Catálogo</a><span aria-hidden="true">/</span><span aria-current="page">{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}</span>
+    </nav>
+  </div>
+
+  <div class="container prod">
+    <section class="stage-panel dark" id="stage"{% if primero %} style="--c: {{ primero.codigo_hex }}"{% endif %} aria-label="Galería del producto">
+      <span class="stage-num" aria-hidden="true">01</span>
+      <div class="cf cf--gal" id="gal-cf" role="group" aria-roledescription="galería 3D" aria-label="Fotos del producto" tabindex="0">
+        <div class="cf-track" id="gal-track">
+          {% for imagen in producto.imagenes.all %}
+          <div class="cf-item" data-color="{{ imagen.color_id }}"><span class="disc"><img src="{{ imagen.imagen.url }}" alt="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}, foto {{ forloop.counter }}" draggable="false"></span></div>
+          {% empty %}
+          <div class="cf-item"><span class="disc"><img src="{% static 'img/logoPng.webp' %}" alt="Imagen no disponible" draggable="false"></span></div>
+          {% endfor %}
+        </div>
+        <span class="cf-floor" aria-hidden="true"></span><span class="cf-ring" aria-hidden="true"></span>
+        <button class="cf-arrow cf-prev" type="button" aria-label="Foto anterior"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="cf-arrow cf-next" type="button" aria-label="Foto siguiente"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="cf-controls">
+        <div class="cf-dots" id="gal-dots"></div>
+      </div>
+      <p class="swipe-hint"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg> Desliza para girar</p>
+    </section>
+
+    <section class="prod-info" aria-labelledby="p-name">
+      <p class="brand-tag brand-tag--lg">{{ producto.modelo.marca.nombre }}</p>
+      <h1 class="display p-name" id="p-name">{{ producto.modelo.nombre }}</h1>
+      <div class="p-priceline">
+        {% if producto.precio_descuento %}
+        <strong class="p-price">${{ producto.precio_descuento|floatformat:'-2u' }}</strong>
+        <s class="p-old" aria-label="Precio anterior">${{ producto.precio|floatformat:'-2u' }}</s>
+        {% widthratio producto.precio_descuento producto.precio 100 as razon %}<span class="badge badge--inline">{{ razon|add:"-100" }}%</span>
+        {% else %}
+        <strong class="p-price">${{ producto.precio|floatformat:'-2u' }}</strong>
+        {% endif %}
+      </div>
+      <p>{% if producto.stock == 0 %}<span class="chip chip-ok">Disponible</span>{% elif producto.stock == 1 %}<span class="chip chip-warn">Pocas unidades</span>{% elif producto.stock == 2 %}<span class="chip chip-out">Agotado</span>{% elif producto.stock == 3 %}<span class="chip chip-soon">Próximamente</span>{% endif %}</p>
+      {% if producto.modelo.descripcion %}<p class="p-desc">{{ producto.modelo.descripcion }}</p>{% endif %}
+
+      <form id="contactForm" method="POST" action="{% url 'mensaje_wasap' %}">
+        {% csrf_token %}
+        <input type="hidden" name="productoSeleccionado" value="{{ producto.id }}" id="productoSeleccionadoInput">
+        {% if producto.colores.all %}
+        <fieldset class="opt">
+          <legend>Color: <b id="p-color-name">{{ primero.nombre }}</b></legend>
+          <div class="swatches" id="p-colors">
+            {% for color in producto.colores.all %}
+            <label class="sw-wrap"><input class="sr-only" type="radio" name="color" value="{{ color.nombre }}" data-id="{{ color.id }}" data-hex="{{ color.codigo_hex }}"{% if forloop.first %} checked{% endif %}><span class="sw" style="--c: {{ color.codigo_hex }}"></span><span class="sr-only">{{ color.nombre }}</span></label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+        {% if producto.tallas.all %}
+        <fieldset class="opt">
+          <legend>Talla</legend>
+          <div class="sizes" id="p-sizes">
+            {% for talla in producto.tallas.all|dictsort:"orden" %}
+            <label class="size"><input class="sr-only" type="radio" name="talla" value="{{ talla.valor }}"><span>{{ talla.valor }}</span></label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+
+        <div class="p-actions">
+          <button class="btn btn-wa desk-only" type="submit"{% if producto.stock == 2 %} disabled{% endif %}><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.8.8c-.9-.3-1.9-1.3-2.2-2.2l.8-.8-1-2L9 9.5z"/></svg><span class="wa-text">{% if producto.stock == 2 %}Agotado{% else %}Pedir por WhatsApp{% endif %}</span></button>
+          <button class="btn btn-outline js-share" type="button"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg> Compartir</button>
+        </div>
+      </form>
+
+      <div class="url-pill">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+        <span class="url-text">{{ origen }}{% url 'zapato_detalle' producto.id %}</span>
+      </div>
+      <p class="url-note">Cada producto tiene su propia página y su propio enlace para compartir.</p>
+    </section>
+  </div>
+
+  {% if productos_relacionados %}
+  <section class="related" aria-labelledby="rel-title">
+    <div class="container">
+      <h2 class="display sec-title sec-title--sm" id="rel-title">También te puede gustar</h2>
+    </div>
+    <div class="rel-track-wrap">
+      <div class="rel-track">
+        {% for rel in productos_relacionados %}
+        <a class="rel-card" href="{% url 'zapato_detalle' rel.id %}" draggable="false"><span class="disc">{% with rel.imagenes.first as relimg %}{% if relimg %}<img src="{{ relimg.imagen.url }}" alt="" loading="lazy" draggable="false">{% else %}<img src="{% static 'img/logoPng.webp' %}" alt="" loading="lazy" draggable="false">{% endif %}{% endwith %}</span><span class="brand-tag">{{ rel.modelo.marca.nombre }}</span><span class="rel-name">{{ rel.modelo.nombre }}</span><span class="price">{% if rel.precio_descuento %}<strong>${{ rel.precio_descuento|floatformat:'-2u' }}</strong><s aria-label="Precio anterior">${{ rel.precio|floatformat:'-2u' }}</s>{% else %}<strong>${{ rel.precio|floatformat:'-2u' }}</strong>{% endif %}</span></a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endwith %}
+{% endwith %}
+{% endblock %}
+
+{% block barra_inferior %}
+<div class="buybar" id="buybar">
+  <div class="buybar-price"><span>Precio</span><strong>${{ producto.precio_descuento|default:producto.precio|floatformat:'-2u' }}</strong></div>
+  <button class="btn btn-wa" type="submit" form="contactForm"{% if producto.stock == 2 %} disabled{% endif %}><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.8.8c-.9-.3-1.9-1.3-2.2-2.2l.8-.8-1-2L9 9.5z"/></svg><span class="wa-text">{% if producto.stock == 2 %}Agotado{% else %}Pedir por WhatsApp{% endif %}</span></button>
+</div>
+{% endblock %}

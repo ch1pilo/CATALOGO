@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.urls import reverse
 
 
 def catalogo_descuento(request):
@@ -237,6 +238,15 @@ def mensaje_wasap(request):
                 print(f'Producto: {objetoProducto.modelo.nombre}')
                 
                 mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}", con un precio de {objetoProducto.precio}$'
+                # Color y talla elegidos (opcionales) y enlace de la página del producto
+                color_elegido = request.POST.get('color')
+                talla_elegida = request.POST.get('talla')
+                if color_elegido:
+                    mensaje += f'. Color: {color_elegido}'
+                if talla_elegida:
+                    mensaje += f'. Talla: {talla_elegida}'
+                enlace_producto = request.build_absolute_uri(reverse('zapato_detalle', args=[objetoProducto.id]))
+                mensaje += f'. Ver zapato: {enlace_producto}'
                 mensaje_codificado = quote_plus(mensaje)
                 
                 # Generar URL según el dispositivo

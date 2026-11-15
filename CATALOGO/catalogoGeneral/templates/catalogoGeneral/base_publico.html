@@ -1,0 +1,90 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141118">
+<title>{% block title %}EMPI Shoes — Zapatos, ropa y accesorios{% endblock %}</title>
+{% block meta_extra %}{% endblock %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'catalogoGeneral/css/empi.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% with vn=request.resolver_match.url_name %}
+<header class="site-header">
+  <div class="container header-in">
+    {% block header_left %}{% endblock %}
+    <a class="brand" href="{% url 'catalogo_principal' %}"><img src="{% static 'img/logoPng.webp' %}" alt="" width="36" height="36"><span class="brand-name">EMPI <b>Shoes</b></span></a>
+    <nav class="desk-nav" aria-label="Principal">
+      <a href="{% url 'catalogo_principal' %}"{% if vn == 'catalogo_principal' %} aria-current="page"{% endif %}>Zapatos</a>
+      <a href="{% url 'catalogo_Ropa' %}"{% if vn == 'catalogo_Ropa' %} aria-current="page"{% endif %}>Ropa</a>
+      <a href="{% url 'catalogo_accesorio' %}"{% if vn == 'catalogo_accesorio' %} aria-current="page"{% endif %}>Accesorios</a>
+      <a href="{% url 'catalogo_descuento' %}"{% if vn == 'catalogo_descuento' %} aria-current="page"{% endif %}>Ofertas</a>
+      <a href="{% url 'contacto' %}"{% if vn == 'contacto' %} aria-current="page"{% endif %}>Contacto</a>
+    </nav>
+    {% block header_right %}<a class="icon-btn header-wa" href="https://wa.me/584126505112" aria-label="Escribir por WhatsApp"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.8.8c-.9-.3-1.9-1.3-2.2-2.2l.8-.8-1-2L9 9.5z"/></svg></a>{% endblock %}
+  </div>
+</header>
+
+<main id="main">
+{% block contenido %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-top">
+      <p class="footer-big" aria-hidden="true">EMPI<br>Shoes</p>
+      <div class="footer-grid">
+        <div class="footer-about">
+          <a class="brand" href="{% url 'catalogo_principal' %}"><img src="{% static 'img/logoPng.webp' %}" alt="" width="36" height="36"><span class="brand-name">EMPI <b>Shoes</b></span></a>
+          <p>La mejor selección de zapatos, ropa y accesorios con las últimas tendencias y marcas exclusivas.</p>
+        </div>
+        <div>
+          <h3>Enlaces Rápidos</h3>
+          <ul class="flist flist--links">
+            <li><a href="https://ch1pilo.github.io/EMPISHOES/#about">Sobre Nosotros</a></li>
+            <li><a href="https://ch1pilo.github.io/EMPISHOES/#testimonios">Testimonios</a></li>
+            <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
+            <li><a href="{% url 'politica_privacidad' %}">Política de Privacidad</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Contacto</h3>
+          <ul class="flist">
+            <li><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span>Empishoesbusiness@gmail.com</span></li>
+            <li><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>+58 (412) 650-5112</span></li>
+            <li><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Venezuela, Zulia, Maracaibo, El Caujaro</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Síguenos</h3>
+          <div class="socials">
+            <a href="https://wa.me/+584126505112" aria-label="WhatsApp"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.8.8c-.9-.3-1.9-1.3-2.2-2.2l.8-.8-1-2L9 9.5z"/></svg></a>
+            <a href="https://www.tiktok.com/@empishoes_ve" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M15 3c.4 2.4 2 4 4.5 4.2"/></svg></a>
+            <a href="https://www.facebook.com/100086057366749" aria-label="Facebook"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8.5c0-.3.2-.5.5-.5z"/></svg></a>
+            <a href="https://www.instagram.com/empishoes.ve?igsh=cjZmejBwaXFtbnp5" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.2 6.8v.01"/></svg></a>
+            <a href="https://t.me/empishoes" aria-label="Telegram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4L3 11l6 2 2 6 3-4 5 4 2-15z"/><path d="M9 13l12-9"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="copy">&copy; {% now "Y" %} EMPI Shoes. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+{% block barra_inferior %}
+<nav class="bottom-nav" aria-label="Navegación principal">
+  <a href="{% url 'catalogo_principal' %}"{% if vn == 'catalogo_principal' %} aria-current="page"{% endif %}><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg><span>Zapatos</span></a>
+  <a href="{% if vn == 'catalogo_principal' or vn == 'catalogo_Ropa' or vn == 'catalogo_accesorio' or vn == 'catalogo_descuento' %}#categorias{% else %}{% url 'catalogo_principal' %}#categorias{% endif %}"{% if vn == 'catalogo_Ropa' or vn == 'catalogo_accesorio' %} aria-current="page"{% endif %}><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>Categorías</span></a>
+  <a href="{% url 'catalogo_descuento' %}"{% if vn == 'catalogo_descuento' %} aria-current="page"{% endif %}><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg><span>Ofertas</span></a>
+  <a href="{% url 'contacto' %}"{% if vn == 'contacto' %} aria-current="page"{% endif %}><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/></svg><span>Contacto</span></a>
+</nav>
+{% endblock %}
+{% endwith %}
+<div class="toast" id="toast" role="status" aria-live="polite"><span></span></div>
+{% block scripts %}{% endblock %}
+<script src="{% static 'catalogoGeneral/js/empi.js' %}"></script>
+</body>
+</html>

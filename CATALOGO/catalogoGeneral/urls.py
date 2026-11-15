@@ -47,7 +47,7 @@ urlpatterns = [
     path('ofertas/', views.productos_ofertas, name='productos_ofertas'),
     path('marca/<slug:marca_slug>/', views.productos_por_marca, name='productos_por_marca'),
     path('marca/<slug:marca_slug>/modelo/<slug:modelo_slug>/', views.productos_por_modelo, name='productos_por_modelo'),
-    path('producto/<int:producto_id>/', views.detalle_producto, name='detalle_producto'),
+    path('producto/<int:producto_id>/', views.detalle_producto, name='zapato_detalle'),
 
     path('filtrar-productos/', views.filtrar_productos, name='filtrar_productos'),
     path('obtener-detalles-producto/<int:producto_id>/', views.obtener_detalles_producto, name='obtener_detalles_producto'),

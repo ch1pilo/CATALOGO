@@ -1,189 +1,57 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contacto - EmpiShoes</title>
-    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/catalogo.css' %}">
-    <link rel="stylesheet" href="{% static 'catalogoGeneral/css/menudesplegable.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <style>
-        .contact-hero {
-            background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.4)), 
-                        url('{% static "img/contacto.jpg" %}') center/cover no-repeat;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Header con navegación -->
-    <header>
-        <div class="header-container">
-            <div class="logo"><img src="{% static 'img/logoPng.webp' %}">EMpi<span>Shoes</span></div>
-            <nav>
-                <button class="menu-toggle" id="menu-toggle">☰</button>
-                <div class='sub-menu' id="mobile-menu">
-                    <ul>
-                        <li><a href="{% url 'catalogo_principal' %}">Zapatos</a></li>
-                        <li><a href="{% url 'catalogo_Ropa' %}">Ropa</a></li>
-                        <li><a href="{% url 'catalogo_accesorio' %}">Accesorios</a></li>
-                        <li><a href="{% url 'catalogo_descuento' %}">Ofertas</a></li>
-                        <li><a href="{% url 'contacto' %}" class="active">Contacto</a></li>
-                    </ul>
-                </div>
-            </nav>
-        </div>
-    </header>
-
-    <!-- Banner principal de contacto -->
+{% extends 'base_publico.html' %}
+{% block title %}Contacto — EMPI Shoes{% endblock %}
+{% block contenido %}
+  <section class="page-hero dark" aria-labelledby="c-title">
     <div class="container">
-        <div class="contact-hero">
-            <div class="contact-hero-content">
-                <h1>Contáctanos</h1>
-                <p>Estamos aquí para ayudarte. Escríbenos y te responderemos a la brevedad.</p>
-            </div>
-        </div>
+      <span class="page-hero-num" aria-hidden="true">04</span>
+      <p class="eyebrow">Contacto</p>
+      <h1 class="display hero-title" id="c-title">Hablemos <span class="accent">de zapatos</span></h1>
+      <p class="hero-sub">Estamos aquí para ayudarte. Escríbenos y te responderemos a la brevedad.</p>
     </div>
+  </section>
 
-    <!-- Contenido principal -->
-    <main class="container">
-        <div class="contact-container">
-            <!-- Información de contacto -->
-            <div class="contact-info">
-                <h2>Información de Contacto</h2> 
-                
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-phone"></i>
-                    </div>
-                    <div class="info-content">
-                        <h3>Teléfonos</h3>
-                        <p>+58 (412) 797-1189</p>
-                        <p>+58 (412) 980-5112</p>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-envelope"></i>
-                    </div>
-                    <div class="info-content">
-                        <h3>Email</h3>
-                        <p>info@empishoes.com</p>
-                        <p>soporte@empishoes.com</p>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="info-content">
-                        <h3>Horario de Atención</h3>
-                        <p>Lunes a Viernes: 9:00 - 18:00</p>
-                        <p>Sábados: 10:00 - 16:00</p>
-                        <p>Domingos: Cerrado</p>
-                    </div>
-                </div>
-                
-                <div class="social-links">
-
-                    <a href="https://www.tiktok.com/@empishoes_ve" class="social-link">
-                        <i class="fab fa-tiktok"></i>
-                    </a>
-
-                    <a href="https://www.facebook.com/100086057366749" class="social-link">
-                        <i class="fab fa-facebook-f"></i>
-                    </a>
-                    <a href="https://www.instagram.com/empishoes.ve?igsh=cjZmejBwaXFtbnp5" class="social-link">
-                        <i class="fab fa-instagram"></i>
-                    </a>
-                    <a href="https://t.me/empishoes" class="social-link">
-                        <i class="fab fa-telegram"></i>
-                    </a>
-                    <a href="https://wa.me/+584126505112" class="social-link">
-                        <i class="fab fa-whatsapp"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Formulario de contacto -->
-            <div class="contact-form">
-                <h2>Envíanos un Mensaje</h2>
-                <form id="contactForm" method="POST" action="{% url 'mensaje_wasap' %}">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="name">Nombre completo *</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                                        
-                    <div class="form-group">
-                        <label for="phone">Teléfono</label>
-                        <input type="tel" id="phone" name="phone">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="subject">Asunto *</label>
-                        <select id="subject" name="subject" required>
-                            <option value="">Selecciona un asunto</option>
-                            <option value="consulta">Consulta general</option>
-                            <option value="soporte">Soporte técnico</option>
-                            <option value="ventas">Información de ventas</option>
-                            <option value="devolucion">Devoluciones</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="message">Mensaje *</label>
-                        <textarea id="message" name="message" required></textarea>
-                    </div>
-                    
-                    <button type="submit" class="btn-submit">Enviar Mensaje</button>
-                </form>
-            </div>
+  <div class="container two-col">
+    <section class="panel" aria-labelledby="info-t">
+      <h2 class="panel-title" id="info-t">Información de contacto</h2>
+      <ul class="info-list">
+        <li><span class="info-ico"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span><div><strong>Teléfono</strong><span>+58 (412) 650-5112</span></div></li>
+        <li><span class="info-ico"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><div><strong>Email</strong><span class="break">Empishoesbusiness@gmail.com</span></div></li>
+        <li><span class="info-ico"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><strong>Horario</strong><span>Lunes a viernes: 9:00 – 18:00</span><span>Sábado: 10:00 – 16:00</span><span>Domingo: cerrado</span></div></li>
+        <li><span class="info-ico"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><div><strong>Ubicación</strong><span>El Caujaro, Maracaibo, Zulia</span></div></li>
+      </ul>
+      <p class="opt-label">Redes</p>
+      <div class="socials socials--ink">
+        <a href="https://wa.me/+584126505112" aria-label="WhatsApp"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.8.8c-.9-.3-1.9-1.3-2.2-2.2l.8-.8-1-2L9 9.5z"/></svg></a>
+        <a href="https://www.tiktok.com/@empishoes_ve" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M15 3c.4 2.4 2 4 4.5 4.2"/></svg></a>
+        <a href="https://www.facebook.com/100086057366749" aria-label="Facebook"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8.5c0-.3.2-.5.5-.5z"/></svg></a>
+        <a href="https://www.instagram.com/empishoes.ve?igsh=cjZmejBwaXFtbnp5" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.2 6.8v.01"/></svg></a>
+        <a href="https://t.me/empishoes" aria-label="Telegram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4L3 11l6 2 2 6 3-4 5 4 2-15z"/><path d="M9 13l12-9"/></svg></a>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="form-t">
+      <h2 class="panel-title" id="form-t">Envíanos un mensaje</h2>
+      <form id="contactForm" method="POST" action="{% url 'mensaje_wasap' %}">
+        {% csrf_token %}
+        <div class="field"><label for="name">Nombre completo <span class="req">*</span></label><input class="input" id="name" name="name" type="text" required autocomplete="name"></div>
+        <div class="field"><label for="phone">Teléfono</label><input class="input" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel"></div>
+        <div class="field"><label for="subject">Asunto <span class="req">*</span></label>
+          <select class="input select" id="subject" name="subject" required>
+            <option value="">Selecciona un asunto</option>
+            <option value="consulta">Consulta general</option>
+            <option value="soporte">Soporte técnico</option>
+            <option value="ventas">Información de ventas</option>
+            <option value="devolucion">Devoluciones</option>
+            <option value="otro">Otro</option>
+          </select>
         </div>
-        
-        <!-- Mapa de ubicación -->
-        <div class="map-container">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62759.85723940863!2d-71.7331335192807!3d10.540691467673076!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e89916a00cf5d59%3A0x241a7f966544e2f7!2sUrbanizacion%20El%20caujaro%2C%20Maracaibo%204004%2C%20Zulia!5e0!3m2!1ses!2sve!4v1756258887855!5m2!1ses!2sve" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <div class="footer-content">
-            <div class="footer-section">
-                <h3>EMPI Shoes</h3>
-                <p>La mejor selección de zapatos, ropa y accesorios con las últimas tendencias y marcas exclusivas.</p>
-            </div>
-            
-            <div class="footer-section">
-                <h3>Enlaces Rápidos</h3>
-                <ul>
-                    <li><a href="https://ch1pilo.github.io/EMPISHOES/#about">Sobre Nosotros</a></li>
-                    <li><a href="https://ch1pilo.github.io/EMPISHOES/#testimonios">Testimonios</a></li>
-                    <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
-                    <li><a href="{% url 'politica_privacidad' %}">Política de Privacidad</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-section">
-                <h3>Contacto</h3>
-                <ul>
-                    <li>Email: Empishoesbusiness@gmail.com</li>
-                    <li>Teléfono: +58 (412) 650-5112</li>
-                    <li>Dirección: Venezuela, Zulia, maracaibo, El Caujaro</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="copyright">
-            &copy; 2022 EMPI Shoes. Todos los derechos reservados.
-        </div>
-    </footer>
-<!-- Al final de tu contacto.html, antes de </body> -->
-    <script src="{% static 'catalogoGeneral/js/menu.js' %}"></script>
-</body>
-</html>
+        <div class="field"><label for="message">Mensaje <span class="req">*</span></label><textarea class="textarea" id="message" name="message" required></textarea></div>
+        <button class="btn btn-wa btn-block" type="submit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.65-4.9A9 9 0 1 1 8 19.4L3 21z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.4-2-1-.8.8c-.9-.3-1.9-1.3-2.2-2.2l.8-.8-1-2L9 9.5z"/></svg> Enviar por WhatsApp</button>
+      </form>
+    </section>
+  </div>
+  <div class="container">
+    <div class="map-frame">
+      <iframe title="Mapa de ubicación: El Caujaro, Maracaibo" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62759.85723940863!2d-71.7331335192807!3d10.540691467673076!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e89916a00cf5d59%3A0x241a7f966544e2f7!2sUrbanizacion%20El%20caujaro%2C%20Maracaibo%204004%2C%20Zulia!5e0!3m2!1ses!2sve!4v1756258887855!5m2!1ses!2sve" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+  </div>
+{% endblock %}

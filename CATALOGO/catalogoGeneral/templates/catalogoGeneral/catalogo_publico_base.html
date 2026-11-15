@@ -1,0 +1,137 @@
+{% extends 'base_publico.html' %}
+{% load static %}
+{% comment %}
+Plantilla compartida por los 4 catálogos públicos (zapatos, ropa, accesorios y ofertas).
+Cada catálogo la extiende y define: title, hero_eyebrow, hero_titulo, hero_sub, cat_titulo y filtro_url.
+Las tarjetas de este archivo y las que genera empi.js (tarjetaHTML) deben mantener la MISMA estructura.
+Estado de stock (como lo guarda el panel): 0 Disponible, 1 Pocas unidades, 2 Agotado, 3 Próximamente.
+{% endcomment %}
+{% block contenido %}
+{% with vn=request.resolver_match.url_name %}
+  <section class="hero dark" id="inicio" aria-labelledby="hero-title">
+    <div class="container">
+      <p class="eyebrow">{% block hero_eyebrow %}Colección {% now "Y" %} · Maracaibo{% endblock %}</p>
+      <h1 class="display hero-title" id="hero-title">{% block hero_titulo %}{% endblock %}</h1>
+      <p class="hero-sub">{% block hero_sub %}Zapatos, ropa y accesorios con las últimas tendencias y marcas exclusivas.{% endblock %}</p>
+    </div>
+    {% if productos %}
+    <div class="hero-stage">
+      <span class="hero-num" id="hero-num" aria-hidden="true">01</span>
+      <div class="cf cf--hero" id="hero-cf" role="group" aria-roledescription="carrusel" aria-label="Productos destacados" tabindex="0">
+        <div class="cf-track">
+          {% for producto in productos|slice:":6" %}
+          <a class="cf-item" href="{% url 'zapato_detalle' producto.id %}" draggable="false" data-brand="{{ producto.modelo.marca.nombre }}" data-name="{{ producto.modelo.nombre }}" data-price="${{ producto.precio_descuento|default:producto.precio|floatformat:'-2u' }}"{% if producto.precio_descuento %} data-old="${{ producto.precio|floatformat:'-2u' }}"{% endif %}>
+            <span class="disc">{% with producto.imagenes.first as imagen %}{% if imagen %}<img src="{{ imagen.imagen.url }}" alt="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}" draggable="false">{% else %}<img src="{% static 'img/logoPng.webp' %}" alt="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}" draggable="false">{% endif %}{% endwith %}</span>
+          </a>
+          {% endfor %}
+        </div>
+        <span class="cf-floor" aria-hidden="true"></span><span class="cf-ring" aria-hidden="true"></span>
+        <button class="cf-arrow cf-prev" type="button" aria-label="Producto anterior"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="cf-arrow cf-next" type="button" aria-label="Producto siguiente"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="cf-controls">
+        <div class="cf-dots" id="hero-dots"></div>
+        <button class="cf-pause" type="button" aria-label="Pausar carrusel" aria-pressed="false"><span class="ico-pause"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></span><span class="ico-play"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></span></button>
+      </div>
+    </div>
+    <div class="container">
+      <div class="hero-info" aria-live="polite">
+        <div class="hi-text">
+          <p class="hi-brand" id="hi-brand"></p>
+          <h2 class="display hi-name" id="hi-name"></h2>
+          <p class="hi-price"><strong id="hi-price"></strong><s id="hi-old"></s></p>
+        </div>
+        <a class="btn btn-light" id="hi-link" href="#catalogo">Ver producto <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <div class="ticker" aria-hidden="true"><span>Pedidos por WhatsApp</span><span>Marcas exclusivas</span><span>Últimas tendencias</span><span>Maracaibo</span></div>
+
+  <section class="catalog" id="catalogo" aria-labelledby="cat-title">
+    <div class="container">
+      <div class="cat-head" id="categorias">
+        <h2 class="display sec-title" id="cat-title">{% block cat_titulo %}{% endblock %}</h2>
+        <p class="count" id="count" aria-live="polite"><span class="count-n">{{ productos|length|stringformat:"02d" }}</span> modelos</p>
+      </div>
+      <div class="chips" role="group" aria-label="Categorías">
+        <a class="chip-cat" href="{% url 'catalogo_principal' %}"{% if vn == 'catalogo_principal' %} aria-current="page"{% endif %}>Zapatos</a>
+        <a class="chip-cat" href="{% url 'catalogo_Ropa' %}"{% if vn == 'catalogo_Ropa' %} aria-current="page"{% endif %}>Ropa</a>
+        <a class="chip-cat" href="{% url 'catalogo_accesorio' %}"{% if vn == 'catalogo_accesorio' %} aria-current="page"{% endif %}>Accesorios</a>
+        <a class="chip-cat" href="{% url 'catalogo_descuento' %}"{% if vn == 'catalogo_descuento' %} aria-current="page"{% endif %}>Ofertas</a>
+      </div>
+      <button class="btn btn-outline filters-open" type="button" aria-expanded="false" aria-controls="filters-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filtros <span class="filters-n" id="filters-n" hidden></span></button>
+
+      <div class="layout">
+        <div class="sheet-backdrop" hidden></div>
+        <div class="filters-wrap" id="filters-wrap" role="dialog" aria-label="Filtros" aria-modal="false">
+          <form class="filters" id="filters">
+            {% csrf_token %}
+            <div class="filters-head">
+              <h3>Filtros</h3>
+              <button class="icon-btn filters-close" type="button" aria-label="Cerrar filtros"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+            <fieldset class="fgroup">
+              <legend>Marca</legend>
+              {% for marca in marcas %}
+              <label class="check"><input type="checkbox" name="marca" value="{{ marca.id }}"><span>{{ marca.nombre }}</span></label>
+              {% endfor %}
+            </fieldset>
+            <fieldset class="fgroup">
+              <legend>Precio</legend>
+              <label class="check"><input type="radio" name="precio" value="0-50"><span>Menos de $50</span></label>
+              <label class="check"><input type="radio" name="precio" value="50-100"><span>$50 – $100</span></label>
+              <label class="check"><input type="radio" name="precio" value="100-200"><span>$100 – $200</span></label>
+              <label class="check"><input type="radio" name="precio" value="200+"><span>Más de $200</span></label>
+            </fieldset>
+            <div class="filters-actions">
+              <button class="btn btn-outline filters-clear" id="limpiar-filtros" type="button">Limpiar filtros</button>
+              <button class="btn filters-apply" type="button">Ver resultados</button>
+            </div>
+          </form>
+        </div>
+
+        <section class="results" aria-label="Productos">
+          <p class="loading" id="loading-indicator" hidden>Filtrando productos...</p>
+          <div class="grid" id="grid" data-filtro-url="{% block filtro_url %}{% endblock %}" data-detalle-url="{% url 'zapato_detalle' 0 %}" data-logo="{% static 'img/logoPng.webp' %}">
+            {% for producto in productos %}
+            <article class="card{% if producto.stock == 2 %} is-out{% endif %}">
+              <a class="card-link" href="{% url 'zapato_detalle' producto.id %}" draggable="false">
+                <span class="card-idx" aria-hidden="true">{{ forloop.counter|stringformat:"02d" }}</span>
+                <span class="card-media">
+                  <span class="disc">{% with producto.imagenes.first as imagen %}{% if imagen %}<img src="{{ imagen.imagen.url }}" alt="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}" loading="lazy" draggable="false">{% else %}<img src="{% static 'img/logoPng.webp' %}" alt="{{ producto.modelo.marca.nombre }} {{ producto.modelo.nombre }}" loading="lazy" draggable="false">{% endif %}{% endwith %}</span>
+                  {% if producto.precio_descuento %}{% widthratio producto.precio_descuento producto.precio 100 as razon %}<span class="badge">{{ razon|add:"-100" }}%</span>{% endif %}
+                </span>
+                <span class="card-body">
+                  <span class="brand-tag">{{ producto.modelo.marca.nombre }}</span>
+                  <h3 class="card-title">{{ producto.modelo.nombre }}</h3>
+                  <span class="price">{% if producto.precio_descuento %}<strong>${{ producto.precio_descuento|floatformat:'-2u' }}</strong><s aria-label="Precio anterior">${{ producto.precio|floatformat:'-2u' }}</s>{% else %}<strong>${{ producto.precio|floatformat:'-2u' }}</strong>{% endif %}</span>
+                  <span class="dots" role="group" aria-label="Colores disponibles">{% for color in producto.colores.all|slice:":4" %}<span class="dot" style="--c: {{ color.codigo_hex }}" role="img" aria-label="Color {{ color.nombre }}"></span>{% endfor %}{% if producto.colores.all|length > 4 %}<span class="dots-more">+{{ producto.colores.all|length|add:"-4" }}</span>{% endif %}</span>
+                  {% if producto.stock == 0 %}<span class="chip chip-ok">Disponible</span>{% elif producto.stock == 1 %}<span class="chip chip-warn">Pocas unidades</span>{% elif producto.stock == 2 %}<span class="chip chip-out">Agotado</span>{% elif producto.stock == 3 %}<span class="chip chip-soon">Próximamente</span>{% endif %}
+                </span>
+              </a>
+            </article>
+            {% endfor %}
+          </div>
+          <p class="empty" id="empty"{% if productos %} hidden{% endif %}>No hay productos con esos filtros. Prueba con otra marca o rango de precio.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  {% if vn != 'catalogo_descuento' %}
+  <section class="promo dark" id="ofertas" aria-labelledby="promo-title">
+    <div class="container promo-in">
+      <p class="promo-num display" aria-hidden="true">%</p>
+      <div class="promo-text">
+        <p class="eyebrow">Ofertas</p>
+        <h2 class="display promo-title" id="promo-title">Menos precio, mismo estilo</h2>
+        <p>Descuentos en modelos seleccionados de calzado, ropa y accesorios.</p>
+        <a class="btn" href="{% url 'catalogo_descuento' %}">Ver ofertas <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+{% endwith %}
+{% endblock %}
