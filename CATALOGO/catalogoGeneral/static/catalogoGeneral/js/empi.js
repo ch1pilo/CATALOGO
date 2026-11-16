@@ -54,6 +54,7 @@
     function renderDots() {
       if (!dotsBox) return;
       dotsBox.innerHTML = '';
+      if (n < 2) return;
       items.forEach(function (_, i) {
         var b = document.createElement('button');
         b.type = 'button';
@@ -89,6 +90,7 @@
     function restart() { stop(); start(); }
 
     function onDown(e) {
+      if (n < 2) return;
       if (e.button !== undefined && e.button !== 0) return;
       dragging = true; dx = 0; startX = e.clientX; suppress = false;
       stop();
@@ -414,20 +416,18 @@
     var buildGallery = function (colorId) {
       var list = GAL.filter(function (g) { return colorId && g.c === String(colorId); });
       if (!list.length) list = GAL.slice();
-      var items = list.map(function (g) { return { s: g.s, a: g.a, m: false }; });
-      var k = 0;
-      while (items.length < 3 && list.length) { items.push({ s: list[k % list.length].s, a: list[k % list.length].a, m: true }); k++; }
       galTrack.innerHTML = '';
-      items.forEach(function (it) {
+      list.forEach(function (g) {
         var d = document.createElement('div');
         d.className = 'cf-item';
         var disc = document.createElement('span');
         disc.className = 'disc';
         var im = document.createElement('img');
-        im.src = it.s; im.alt = it.a; im.draggable = false;
-        if (it.m) im.className = 'is-mirror';
+        im.src = g.s; im.alt = g.a; im.draggable = false;
         disc.appendChild(im); d.appendChild(disc); galTrack.appendChild(d);
       });
+      /* con 1 sola foto no hay flechas, puntos ni "desliza para girar" */
+      stage.classList.toggle('is-single', list.length < 2);
       gal.refresh();
     };
 

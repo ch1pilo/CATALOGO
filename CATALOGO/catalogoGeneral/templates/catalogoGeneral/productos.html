@@ -88,6 +88,15 @@
             color: #6c757d;
             font-style: italic;
         }
+
+        .fotos-previews {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .fotos-previews .imagen-preview {
+            margin-right: 0;
+        }
     </style>
 </head>
 <body>
@@ -178,12 +187,12 @@
                                         </td>
                                         <td>
                                             <button type="button" class="btn-seleccionar-imagen" data-color-id="{{ color.id }}">
-                                                Seleccionar imagen
+                                                Seleccionar imágenes
                                             </button>
                                             <input type="file" class="input-imagen" id="imagen-color-{{ color.id }}" 
-                                                name="imagen_color_{{ color.id }}" accept="image/*" 
+                                                name="imagen_color_{{ color.id }}" accept="image/*" multiple
                                                 data-color-id="{{ color.id }}">
-                                            <span class="nombre-archivo"></span>
+                                            <span class="nombre-archivo">0/6 fotos (máx. 6 por color)</span>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -308,53 +317,63 @@
             const filtroTallas = document.getElementById('filtro-tallas');
             filtroTallas.addEventListener('input', filtrarTallas);
 
-            // Botones para seleccionar imágenes
-document.querySelectorAll('.btn-seleccionar-imagen').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const colorId = this.getAttribute('data-color-id');
-        document.getElementById('imagen-color-' + colorId).click();
-    });
-});
+            // Botones para seleccionar imágenes (varias por color, máximo 6)
+            const MAX_FOTOS = 6;
+            document.querySelectorAll('.btn-seleccionar-imagen').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const colorId = this.getAttribute('data-color-id');
+                    document.getElementById('imagen-color-' + colorId).click();
+                });
+            });
 
-// Mostrar nombre de archivo cuando se selecciona una imagen
-document.querySelectorAll('.input-imagen').forEach(input => {
-    input.addEventListener('change', function() {
-        const colorId = this.getAttribute('data-color-id');
-        const fileName = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado';
-        
-        // Actualizar el texto del nombre del archivo
-        let fileNameSpan = this.parentElement.querySelector('.nombre-archivo');
-        if (!fileNameSpan) {
-            fileNameSpan = document.createElement('span');
-            fileNameSpan.className = 'nombre-archivo';
-            this.parentElement.appendChild(fileNameSpan);
-        }
-        fileNameSpan.textContent = fileName;
-        
-        // Si hay una imagen, actualizar la vista previa
-        if (this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Encontrar la fila específica para este color
-                const fila = document.querySelector(`tr input[data-color-id="${colorId}"]`).closest('tr');
-                // Buscar la celda de imagen (cuarta columna)
-                const tdImagen = fila.querySelector('td:nth-child(4)');
-                
-                // Limpiar contenido previo
-                tdImagen.innerHTML = '';
-                
-                // Crear y agregar la imagen preview
-                const imgPreview = document.createElement('img');
-                imgPreview.className = 'imagen-preview';
-                imgPreview.src = e.target.result;
-                imgPreview.setAttribute('data-color-id', colorId);
-                
-                tdImagen.appendChild(imgPreview);
-            };
-            reader.readAsDataURL(this.files[0]);
-        }
-    });
-});
+            // Vista previa de TODAS las imágenes elegidas + contador n/6
+            document.querySelectorAll('.input-imagen').forEach(input => {
+                input.addEventListener('change', function() {
+                    const colorId = this.getAttribute('data-color-id');
+                    let archivos = Array.from(this.files);
+
+                    // Si eligen más de las que caben, se quedan las primeras 6
+                    if (archivos.length > MAX_FOTOS) {
+                        mostrarAlerta('Máximo ' + MAX_FOTOS + ' fotos por color: se usarán las primeras ' + MAX_FOTOS + '.', 'error');
+                        const dt = new DataTransfer();
+                        archivos.slice(0, MAX_FOTOS).forEach(f => dt.items.add(f));
+                        this.files = dt.files;
+                        archivos = Array.from(this.files);
+                    }
+
+                    // Contador
+                    let fileNameSpan = this.parentElement.querySelector('.nombre-archivo');
+                    if (!fileNameSpan) {
+                        fileNameSpan = document.createElement('span');
+                        fileNameSpan.className = 'nombre-archivo';
+                        this.parentElement.appendChild(fileNameSpan);
+                    }
+                    fileNameSpan.textContent = archivos.length + '/' + MAX_FOTOS + ' fotos (máx. ' + MAX_FOTOS + ' por color)';
+
+                    // Encontrar la fila específica para este color y su celda de imagen (cuarta columna)
+                    const fila = document.querySelector(`tr input[data-color-id="${colorId}"]`).closest('tr');
+                    const tdImagen = fila.querySelector('td:nth-child(4)');
+                    tdImagen.innerHTML = '';
+
+                    if (archivos.length === 0) {
+                        tdImagen.innerHTML = '<span class="text-muted">Sin imagen</span>';
+                        return;
+                    }
+
+                    const contenedor = document.createElement('div');
+                    contenedor.className = 'fotos-previews';
+                    archivos.forEach(archivo => {
+                        const imgPreview = document.createElement('img');
+                        imgPreview.className = 'imagen-preview';
+                        imgPreview.setAttribute('data-color-id', colorId);
+                        imgPreview.alt = archivo.name;
+                        imgPreview.src = URL.createObjectURL(archivo);
+                        imgPreview.onload = function() { URL.revokeObjectURL(imgPreview.src); };
+                        contenedor.appendChild(imgPreview);
+                    });
+                    tdImagen.appendChild(contenedor);
+                });
+            });
 
             // Manejo del formulario
             const form = document.getElementById('form-producto');

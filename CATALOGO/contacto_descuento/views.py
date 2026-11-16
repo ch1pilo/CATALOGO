@@ -10,6 +10,8 @@ import json
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.urls import reverse
+import logging
+logger = logging.getLogger(__name__)
 
 
 def catalogo_descuento(request):
@@ -30,7 +32,7 @@ def catalogo_descuento(request):
     for marca in marcas:
 
         if not marca.activo:
-            print(f'{marca.modelo.marca.nombre} no está activo')
+            logger.debug(f'{marca.modelo.marca.nombre} no está activo')
         else:
             listamarca.append(marca)
     colores = Color.objects.filter(activo=True)
@@ -53,13 +55,13 @@ def catalogo_descuento(request):
     if precio_max:
         productos = productos.filter(precio__lte=precio_max)
     
-    print(f'marcas : {listamarca}')
-    print(f'marcas : {type(marcas)}')
+    logger.debug(f'marcas : {listamarca}')
+    logger.debug(f'marcas : {type(marcas)}')
     for marca in listamarca:
-        print(f'{marca.nombre} hola')
+        logger.debug(f'{marca.nombre} hola')
 
     for color in colores:
-        print(f'{color.nombre} hola')
+        logger.debug(f'{color.nombre} hola')
         
     context = {
         'productos': productos,
@@ -102,7 +104,7 @@ def filtrar_productosDescuento(request):
             precio = data.get('precio', '')
             
             
-            print(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
+            logger.debug(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
             
             # Filtrar productos
             productos = Producto.objects.all()
@@ -111,7 +113,7 @@ def filtrar_productosDescuento(request):
 
             if marcas:     
                 productos = productos.filter(modelo__marca__id__in=marcas)             
-                print(f"Productos después de filtrar por marcas: {productos.count()}")
+                logger.debug(f"Productos después de filtrar por marcas: {productos.count()}")
                 
             if precio:
                 if precio == '0-50':
@@ -122,7 +124,7 @@ def filtrar_productosDescuento(request):
                     productos = productos.filter(precio_descuento__range=(100, 200) , precio_descuento__isnull=False)
                 elif precio == '200+':
                     productos = productos.filter(precio_descuento__gt=200, precio_descuento__isnull=False)
-                print(f"Productos después de filtrar por precio: {productos.count()}")
+                logger.debug(f"Productos después de filtrar por precio: {productos.count()}")
             
            
             
@@ -149,11 +151,11 @@ def filtrar_productosDescuento(request):
                 }
                 productos_data.append(producto_dict)
             
-            print(f"Enviando {len(productos_data)} productos")
+            logger.debug(f"Enviando {len(productos_data)} productos")
             return JsonResponse({'productos': productos_data})
             
         except Exception as e:
-            print(f"Error en filtrar_productos: {str(e)}")
+            logger.debug(f"Error en filtrar_productos: {str(e)}")
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -161,9 +163,9 @@ def filtrar_productosDescuento(request):
 def obtener_detalles_producto(request, producto_id):
     if request.method == 'GET':
         try:
-            print(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
+            logger.debug(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
             producto = Producto.objects.get(id=producto_id)
-            print(f'Producto encontrado: {producto}')
+            logger.debug(f'Producto encontrado: {producto}')
             # Serializar datos del producto
             producto_data = {
                 'id': producto.id,
@@ -178,7 +180,7 @@ def obtener_detalles_producto(request, producto_id):
                 'imagenes': []
             }
 
-            print(f'Producto data: {producto_data}')
+            logger.debug(f'Producto data: {producto_data}')
             
             # Añadir colores
             for color in producto.colores.all():
@@ -188,8 +190,8 @@ def obtener_detalles_producto(request, producto_id):
                     'codigo_hex': color.codigo_hex
                 })
 
-            print(f'Colores añadidos: {producto_data["colores"]}')
-            print(f'data con colores: {producto_data}')
+            logger.debug(f'Colores añadidos: {producto_data["colores"]}')
+            logger.debug(f'data con colores: {producto_data}')
             
             # Añadir imágenes
             for imagen in producto.imagenes.all():
@@ -200,8 +202,8 @@ def obtener_detalles_producto(request, producto_id):
                     'es_principal': imagen.es_principal
                 })
 
-            print(f'Imágenes añadidas: {producto_data["imagenes"]}')
-            print(f'data con imagenes: {producto_data}')
+            logger.debug(f'Imágenes añadidas: {producto_data["imagenes"]}')
+            logger.debug(f'data con imagenes: {producto_data}')
             
             return JsonResponse(producto_data)
             
@@ -221,8 +223,8 @@ def mensaje_wasap(request):
         user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
         es_ios = any(term in user_agent for term in ['iphone', 'ipad', 'ipod', 'ios'])
         
-        print(f"User-Agent: {user_agent}")
-        print(f"Es iOS: {es_ios}")
+        logger.debug(f"User-Agent: {user_agent}")
+        logger.debug(f"Es iOS: {es_ios}")
         
         name = request.POST.get('name')
         phone = request.POST.get('phone')
@@ -231,11 +233,11 @@ def mensaje_wasap(request):
         
         if name is None and phone is None and subject is None and message is None:
             producto = request.POST.get('productoSeleccionado')
-            print(f'Producto seleccionado: {producto}')
+            logger.debug(f'Producto seleccionado: {producto}')
             
             try:
                 objetoProducto = Producto.objects.get(id=producto)
-                print(f'Producto: {objetoProducto.modelo.nombre}')
+                logger.debug(f'Producto: {objetoProducto.modelo.nombre}')
                 
                 mensaje = f'Hola estoy interesado en este producto "{objetoProducto.modelo.nombre}", de la Marca: "{objetoProducto.modelo.marca.nombre}", con un precio de {objetoProducto.precio}$'
                 # Color y talla elegidos (opcionales) y enlace de la página del producto
@@ -253,7 +255,7 @@ def mensaje_wasap(request):
                 if es_ios:
                     # ✅ URL que SÍ funciona en iOS
                     url_wasap = f"https://wa.me/584126505112?text={mensaje_codificado}"
-                    print(f'URL iOS: {url_wasap}')
+                    logger.debug(f'URL iOS: {url_wasap}')
                 else:
                     # ✅ URL para Android y otros
                     url_wasap = f"https://api.whatsapp.com/send?phone=584126505112&text={mensaje_codificado}"

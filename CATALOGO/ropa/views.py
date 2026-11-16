@@ -6,6 +6,8 @@ from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.template.loader import render_to_string
+import logging
+logger = logging.getLogger(__name__)
 
 def catalogo_Ropa(request):
     """Vista principal del catálogo"""
@@ -21,13 +23,13 @@ def catalogo_Ropa(request):
     marcas = Marca.objects.filter(tipoProducto__nombre='Prendas')
     listamarca = []
     for marca in marcas:
-        print(f'marca : {marca.nombre} ')
+        logger.debug(f'marca : {marca.nombre} ')
         for producto in productos:
-            print(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
+            logger.debug(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
             if producto.modelo.marca.nombre == marca.nombre:
                 if marca not in listamarca:
                     listamarca.append(marca)
-                    print(f'marca agregada : {marca.nombre} ')
+                    logger.debug(f'marca agregada : {marca.nombre} ')
                 
     colores = Color.objects.filter(activo=True)
     
@@ -49,13 +51,13 @@ def catalogo_Ropa(request):
     if precio_max:
         productos = productos.filter(precio__lte=precio_max)
     
-    print(f'marcas : {listamarca}')
-    print(f'marcas : {type(marcas)}')
+    logger.debug(f'marcas : {listamarca}')
+    logger.debug(f'marcas : {type(marcas)}')
     for marca in listamarca:
-        print(f'{marca.nombre} hola')
+        logger.debug(f'{marca.nombre} hola')
 
     for color in colores:
-        print(f'{color.nombre} hola')
+        logger.debug(f'{color.nombre} hola')
         
     context = {
         'productos': productos,
@@ -97,7 +99,7 @@ def filtrar_productosRopa(request):
             precio = data.get('precio', '')
             
             
-            print(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
+            logger.debug(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
             
             # Filtrar productos
             productos = Producto.objects.all()
@@ -106,7 +108,7 @@ def filtrar_productosRopa(request):
 
             if marcas:
                 productos = productos.filter(modelo__marca__id__in=marcas, modelo__tipoProducto__nombre='Prendas').distinct()
-                print(f"Productos después de filtrar por marcas: {productos.count()}")
+                logger.debug(f"Productos después de filtrar por marcas: {productos.count()}")
                 
             if precio:
                 if precio == '0-50':
@@ -143,7 +145,7 @@ def filtrar_productosRopa(request):
                         Q(precio_descuento__isnull=False, precio_descuento__gte=200,) |
                         Q(precio_descuento__isnull=True, precio__gte=200)
                     ).distinct()
-                print(f"Productos después de filtrar por precio: {productos.count()}")
+                logger.debug(f"Productos después de filtrar por precio: {productos.count()}")
             
            
             
@@ -170,11 +172,11 @@ def filtrar_productosRopa(request):
                 }
                 productos_data.append(producto_dict)
             
-            print(f"Enviando {len(productos_data)} productos")
+            logger.debug(f"Enviando {len(productos_data)} productos")
             return JsonResponse({'productos': productos_data})
             
         except Exception as e:
-            print(f"Error en filtrar_productos: {str(e)}")
+            logger.debug(f"Error en filtrar_productos: {str(e)}")
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -182,9 +184,9 @@ def filtrar_productosRopa(request):
 def obtener_detalles_producto(request, producto_id):
     if request.method == 'GET':
         try:
-            print(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
+            logger.debug(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
             producto = Producto.objects.get(id=producto_id)
-            print(f'Producto encontrado: {producto}')
+            logger.debug(f'Producto encontrado: {producto}')
             # Serializar datos del producto
             producto_data = {
                 'id': producto.id,
@@ -199,7 +201,7 @@ def obtener_detalles_producto(request, producto_id):
                 'imagenes': []
             }
 
-            print(f'Producto data: {producto_data}')
+            logger.debug(f'Producto data: {producto_data}')
             
             # Añadir colores
             for color in producto.colores.all():
@@ -209,8 +211,8 @@ def obtener_detalles_producto(request, producto_id):
                     'codigo_hex': color.codigo_hex
                 })
 
-            print(f'Colores añadidos: {producto_data["colores"]}')
-            print(f'data con colores: {producto_data}')
+            logger.debug(f'Colores añadidos: {producto_data["colores"]}')
+            logger.debug(f'data con colores: {producto_data}')
             
             # Añadir imágenes
             for imagen in producto.imagenes.all():
@@ -221,8 +223,8 @@ def obtener_detalles_producto(request, producto_id):
                     'es_principal': imagen.es_principal
                 })
 
-            print(f'Imágenes añadidas: {producto_data["imagenes"]}')
-            print(f'data con imagenes: {producto_data}')
+            logger.debug(f'Imágenes añadidas: {producto_data["imagenes"]}')
+            logger.debug(f'data con imagenes: {producto_data}')
             
             return JsonResponse(producto_data)
             

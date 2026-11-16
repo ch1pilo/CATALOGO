@@ -94,6 +94,40 @@
             color: #6c757d;
             font-style: italic;
         }
+
+        .fotos-previews {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .fotos-previews .imagen-preview {
+            margin-right: 0;
+            display: block;
+        }
+        .foto-item {
+            position: relative;
+            display: inline-block;
+        }
+        .btn-eliminar-foto {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: #d32f2f;
+            color: #fff;
+            font-size: 14px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .fotos-nuevas .imagen-preview {
+            border-color: #4CAF50;
+        }
     </style>
 </head>
 <body>
@@ -158,11 +192,11 @@
                         </thead>
                         <tbody id="tabla-body-colores">
                             {% for color in colores %}
-                                {% with imagen_color=producto.imagenes.all|get_imagen_por_color:color.id %}
+                                {% with imagenes_color=producto.imagenes.all|get_imagenes_por_color:color.id %}
                                 <tr class="{% if color.id in colores_seleccionados_ids %}color-seleccionado{% endif %}">
                                     <td style="text-align: center;">
                                         <!-- CORRECCIÓN: Solo el checkbox para seleccionar color -->
-                                        <input type="checkbox" class="color-checkbox" value="{{ color.id }}" 
+                                        <input type="checkbox" class="color-checkbox" value="{{ color.id }}"
                                             data-color="{{ color.nombre }}"
                                             {% if color.id in colores_seleccionados_ids %}checked{% endif %}>
                                     </td>
@@ -172,22 +206,25 @@
                                         {{ color.codigo_hex }}
                                     </td>
                                     <td>
-                                        {% if imagen_color %}
-                                            <img src="{{ imagen_color.imagen.url }}" class="imagen-preview" alt="Imagen {{ color.nombre }}">
-                                        {% else %}
-                                            <span class="text-muted">Sin imagen</span>
-                                        {% endif %}
+                                        <div class="fotos-previews fotos-guardadas" data-color-id="{{ color.id }}">
+                                            {% for imagen_color in imagenes_color %}
+                                            <span class="foto-item" data-imagen-id="{{ imagen_color.id }}">
+                                                <img src="{{ imagen_color.imagen.url }}" class="imagen-preview" alt="Imagen {{ color.nombre }}">
+                                                <button type="button" class="btn-eliminar-foto" data-url="{% url 'eliminar_imagen_producto' imagen_color.id %}" data-color-id="{{ color.id }}" title="Eliminar esta foto" aria-label="Eliminar esta foto">&times;</button>
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        <span class="text-muted sin-fotos" data-color-id="{{ color.id }}"{% if imagenes_color %} style="display: none;"{% endif %}>Sin imagen</span>
+                                        <div class="fotos-previews fotos-nuevas" data-color-id="{{ color.id }}"></div>
                                     </td>
                                     <td>
                                         <button type="button" class="btn-seleccionar-imagen" data-color-id="{{ color.id }}">
-                                            Seleccionar imagen
+                                            Seleccionar imágenes
                                         </button>
-                                        <input type="file" class="input-imagen" id="imagen-color-{{ color.id }}" 
-                                            name="imagen_color_{{ color.id }}" accept="image/*" 
-                                            data-color-id="{{ color.id }}">
-                                        {% if imagen_color %}
-                                            <span class="nombre-archivo">{{ imagen_color.imagen.name|basename }}</span>
-                                        {% endif %}
+                                        <input type="file" class="input-imagen" id="imagen-color-{{ color.id }}"
+                                            name="imagen_color_{{ color.id }}" accept="image/*" multiple
+                                            data-color-id="{{ color.id }}" data-existentes="{{ imagenes_color|length }}">
+                                        <span class="nombre-archivo">{{ imagenes_color|length }}/6 fotos (máx. 6 por color)</span>
                                     </td>
                                 </tr>
                                 {% endwith %}
@@ -307,50 +344,103 @@
                 });
             });
             
-            // Botones para seleccionar imágenes
+            // Botones para seleccionar imágenes (varias por color, máximo 6 entre guardadas y nuevas)
+            const MAX_FOTOS = 6;
             document.querySelectorAll('.btn-seleccionar-imagen').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const colorId = this.getAttribute('data-color-id');
-                    document.getElementById('imagen-color-' + colorId).click();
+                    const input = document.getElementById('imagen-color-' + colorId);
+                    if (parseInt(input.dataset.existentes, 10) >= MAX_FOTOS) {
+                        mostrarAlerta('Este color ya tiene ' + MAX_FOTOS + ' fotos. Elimina alguna para subir otras.', 'error');
+                        return;
+                    }
+                    input.click();
                 });
             });
-            
-            // Mostrar nombre de archivo cuando se selecciona una imagen
+
+            // Contador n/6 (guardadas + nuevas)
+            function actualizarContador(input) {
+                const existentes = parseInt(input.dataset.existentes, 10) || 0;
+                const nuevas = input.files.length;
+                const span = input.parentElement.querySelector('.nombre-archivo');
+                if (span) {
+                    span.textContent = (existentes + nuevas) + '/' + MAX_FOTOS + ' fotos (máx. ' + MAX_FOTOS + ' por color)' +
+                        (nuevas ? ' · ' + nuevas + ' nueva(s) por subir' : '');
+                }
+            }
+
+            // Vista previa de TODAS las imágenes nuevas elegidas
             document.querySelectorAll('.input-imagen').forEach(input => {
                 input.addEventListener('change', function() {
                     const colorId = this.getAttribute('data-color-id');
-                    const fileName = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado';
-                    
-                    // Actualizar el texto del nombre del archivo
-                    let fileNameSpan = this.parentElement.querySelector('.nombre-archivo');
-                    if (!fileNameSpan) {
-                        fileNameSpan = document.createElement('span');
-                        fileNameSpan.className = 'nombre-archivo';
-                        this.parentElement.appendChild(fileNameSpan);
+                    const existentes = parseInt(this.dataset.existentes, 10) || 0;
+                    const caben = Math.max(0, MAX_FOTOS - existentes);
+                    let archivos = Array.from(this.files);
+
+                    // Si eligen más de las que caben, se quedan solo las que caben
+                    if (archivos.length > caben) {
+                        mostrarAlerta('Solo caben ' + caben + ' foto(s) más en este color (máximo ' + MAX_FOTOS + '): se usarán las primeras ' + caben + '.', 'error');
+                        const dt = new DataTransfer();
+                        archivos.slice(0, caben).forEach(f => dt.items.add(f));
+                        this.files = dt.files;
+                        archivos = Array.from(this.files);
                     }
-                    fileNameSpan.textContent = fileName;
-                    
-                    // Si hay una imagen previa, actualizarla con la vista previa
-                    if (this.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            // Buscar o crear elemento de imagen preview
-                            let imgPreview = document.querySelector(`tr .imagen-preview[data-color-id="${colorId}"]`);
-                            if (!imgPreview) {
-                                imgPreview = document.createElement('img');
-                                imgPreview.className = 'imagen-preview';
-                                imgPreview.setAttribute('data-color-id', colorId);
-                                // Insertar antes del botón
-                                const btn = document.querySelector(`.btn-seleccionar-imagen[data-color-id="${colorId}"]`);
-                                btn.parentElement.insertBefore(imgPreview, btn);
-                            }
-                            imgPreview.src = e.target.result;
-                        };
-                        reader.readAsDataURL(this.files[0]);
-                    }
+
+                    const contenedor = document.querySelector(`.fotos-nuevas[data-color-id="${colorId}"]`);
+                    contenedor.innerHTML = '';
+                    archivos.forEach(archivo => {
+                        const imgPreview = document.createElement('img');
+                        imgPreview.className = 'imagen-preview';
+                        imgPreview.setAttribute('data-color-id', colorId);
+                        imgPreview.alt = archivo.name;
+                        imgPreview.src = URL.createObjectURL(archivo);
+                        imgPreview.onload = function() { URL.revokeObjectURL(imgPreview.src); };
+                        contenedor.appendChild(imgPreview);
+                    });
+                    actualizarContador(this);
                 });
             });
-            
+
+            // Eliminar una foto ya guardada (POST con CSRF por fetch, con confirmación)
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!confirm('¿Eliminar esta foto? Se borra del servidor y no se puede deshacer.')) return;
+                    const boton = this;
+                    const colorId = boton.getAttribute('data-color-id');
+                    boton.disabled = true;
+                    fetch(boton.dataset.url, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin'
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error('HTTP ' + response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            boton.closest('.foto-item').remove();
+                            const input = document.getElementById('imagen-color-' + colorId);
+                            input.dataset.existentes = data.restantes;
+                            if (data.restantes === 0) {
+                                document.querySelector(`.sin-fotos[data-color-id="${colorId}"]`).style.display = '';
+                            }
+                            // Si ya había nuevas elegidas, se revalida contra el cupo disponible
+                            if (input.files.length > MAX_FOTOS - data.restantes) {
+                                input.dispatchEvent(new Event('change'));
+                            } else {
+                                actualizarContador(input);
+                            }
+                            mostrarAlerta('Foto eliminada', 'success');
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            boton.disabled = false;
+                            mostrarAlerta('No se pudo eliminar la foto. Vuelve a iniciar sesión e inténtalo de nuevo.', 'error');
+                        });
+                });
+            });
+
             // Actualizar campos ocultos de colores y tallas
             document.querySelectorAll('.color-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {

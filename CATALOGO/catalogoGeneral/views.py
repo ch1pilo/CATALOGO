@@ -4,9 +4,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, login_required
 from django.http import JsonResponse
 from .models import Producto, Modelo, Color, Talla, Marca, ImagenProducto, TipoMarca
+from .imagenes import agregar_imagenes, eliminar_imagen, MAX_FOTOS_POR_COLOR
+from django.views.decorators.http import require_POST
 import json
 from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout    
+import logging
+logger = logging.getLogger(__name__)
 
 
 def login (request):
@@ -16,7 +20,7 @@ def logear (request):
     usuario = request.POST.get('username')
     password = request.POST.get('password')
 
-    print(f'Usuario: {usuario}, Password: {password}')
+    logger.debug(f'Usuario: {usuario}, Password: {password}')
     
     usuario_autenticado = authenticate(request, username=usuario, password=password)
 
@@ -47,7 +51,7 @@ def autenticar_usuario(request):
 def obtener_tipos(request):
     tipos = TipoMarca.objects.all().values('id', 'nombre')
     tipos_list = list(tipos)
-    print('cargados')
+    logger.debug('cargados')
     return JsonResponse(tipos_list, safe=False)
 
 
@@ -69,7 +73,7 @@ def gestion_marcas(request):
     marcas = Marca.objects.all()
     tipo = TipoMarca.objects.all()
     for marca in marcas:
-        print(f'{marca.nombre} hola')
+        logger.debug(f'{marca.nombre} hola')
 
     return render(request, 'marcas.html', {'marcas': marcas,
                                            'tipo': tipo})
@@ -78,9 +82,9 @@ def guardar_marca(request):
     if request.method == 'POST':
         tipos = request.POST.get('tipos_seleccionados', '').split(',')
         for tipo in tipos:
-            print(f'tipo id: {tipo}')
+            logger.debug(f'tipo id: {tipo}')
         nombre = request.POST.get('nombre_marca')
-        print(f'{nombre} hola')
+        logger.debug(f'{nombre} hola')
         descripcion = request.POST.get('descripcion')
         if not nombre:
             return JsonResponse({'success': False, 'error': 'El nombre de la marca es obligatorio.'})
@@ -98,14 +102,14 @@ def guardar_marca(request):
 
         enviar.save()
         for tipo_id in tipos:
-            print(f'tipo id: {tipo_id}')
+            logger.debug(f'tipo id: {tipo_id}')
             tipo = TipoMarca.objects.get(id=tipo_id)
             enviar.tipoProducto.add(tipo)
 
         tiposProductos = []
         for i in tipos:
             tipoP = TipoMarca.objects.get(id=i)
-            print(f'tipoP: {tipoP.nombre}') 
+            logger.debug(f'tipoP: {tipoP.nombre}') 
             tiposProductos.append(tipoP.nombre)
         marca = Marca.objects.get(nombre=nombre)
         
@@ -118,7 +122,7 @@ def guardar_marca(request):
     return render(request, 'marca.html')
 
 def actualizarMarca (request, marca_id):
-    print(f'Actualizar marca ID: {marca_id}')
+    logger.debug(f'Actualizar marca ID: {marca_id}')
     nombre = request.POST.get('nombre')
     if Marca.objects.filter(nombre=nombre).exclude(id=marca_id).exists():
         messages.error(request, f'La marca {nombre} ya existe.')
@@ -126,11 +130,11 @@ def actualizarMarca (request, marca_id):
     
     descripcion = request.POST.get('descripcion')  
     activoStr = request.POST.get('activo') 
-    print(f'{activoStr} {type(activoStr)} hola activo')
+    logger.debug(f'{activoStr} {type(activoStr)} hola activo')
     activo = bool(activoStr) 
-    print(f'{activo} {type(activo)} hola activo')
+    logger.debug(f'{activo} {type(activo)} hola activo')
     tipos = request.POST.get('tipos_ids', '').split(',')
-    print(f'Actualizar marca ID: {marca_id}, Nombre: {nombre}, Descripción: {descripcion}, Activo: {activo}, Tipos: {tipos}')
+    logger.debug(f'Actualizar marca ID: {marca_id}, Nombre: {nombre}, Descripción: {descripcion}, Activo: {activo}, Tipos: {tipos}')
     marca = get_object_or_404(Marca, id=marca_id)
     marca.nombre = nombre
     marca.descripcion = descripcion
@@ -138,7 +142,7 @@ def actualizarMarca (request, marca_id):
     marca.tipoProducto.clear()  # Limpiar tipos anteriores
     listatipos = []
     for tipo_id in tipos:
-        print(f'tipo id: {tipo_id}')
+        logger.debug(f'tipo id: {tipo_id}')
         tipo = TipoMarca.objects.get(id=tipo_id)
         listatipos.append(tipo.nombre)
         marca.tipoProducto.add(tipo)
@@ -151,7 +155,7 @@ def actualizarMarca (request, marca_id):
                                                  })
 
 def eliminar_marca(request, marca_id):
-    print(f'Eliminar marca ID: {marca_id}')
+    logger.debug(f'Eliminar marca ID: {marca_id}')
     marca = get_object_or_404(Marca, id=marca_id)
     nombre_marca = marca.nombre  # Guardar el nombre antes de eliminar
     marca.delete()
@@ -163,7 +167,7 @@ def eliminar_marca(request, marca_id):
 def obtener_tipos_por_marca(request, marca_id):
     marca = get_object_or_404(Marca, id=marca_id)
     tipos = marca.tipoProducto.all().values('id', 'nombre')
-    print(f'tipos: {tipos}')
+    logger.debug(f'tipos: {tipos}')
 
     tipos_list = list(tipos)
     return JsonResponse({'tipos' : tipos_list}, safe=False)
@@ -185,16 +189,16 @@ def gestion_modelos(request):
         # Obtener los tipos de producto disponibles para la marca de este modelo
         tipos_de_la_marca = modelo.marca.tipoProducto.all()
         
-        print(f'Modelo: {modelo.nombre}, Marca: {modelo.marca.nombre}')
-        print(f'Tipos del modelo: {[t.nombre for t in tipos_del_modelo]}')
-        print(f'Tipos de la marca: {[t.nombre for t in tipos_de_la_marca]}')
-        print('---')
+        logger.debug(f'Modelo: {modelo.nombre}, Marca: {modelo.marca.nombre}')
+        logger.debug(f'Tipos del modelo: {[t.nombre for t in tipos_del_modelo]}')
+        logger.debug(f'Tipos de la marca: {[t.nombre for t in tipos_de_la_marca]}')
+        logger.debug('---')
         
         listaproductos.append((modelo, tipos_del_modelo, tipos_de_la_marca))
     
     # Debug
     for i, (modelo, tipos_modelo, tipos_marca) in enumerate(listaproductos, 1):
-        print(f'{i}. {modelo.nombre} tiene {tipos_modelo.count()} tipos y su marca tiene {tipos_marca.count()} tipos')
+        logger.debug(f'{i}. {modelo.nombre} tiene {tipos_modelo.count()} tipos y su marca tiene {tipos_marca.count()} tipos')
     
     return render(request, 'modelos.html', {
         'modelos': modelos,
@@ -209,7 +213,7 @@ def guardar_modelo(request):
         descripcion = request.POST.get('descripcion', '')
         activo = True
 
-        print(f'{activo} {type(activo)} hola activo')
+        logger.debug(f'{activo} {type(activo)} hola activo')
         
         if not nombre or not marca_id:
             return JsonResponse({'success': False, 'error': 'El nombre y la marca del modelo son obligatorios.'})
@@ -229,7 +233,7 @@ def guardar_modelo(request):
         modelo.tipoProducto.clear()  # Limpiar tipos anteriores
         tipoMarcalista = []
         for tipo_id in tipos:
-            print(f'tipo id: {tipo_id}')
+            logger.debug(f'tipo id: {tipo_id}')
             tipo = TipoMarca.objects.get(id=tipo_id)
             tipoMarcalista.append(tipo.nombre)
             modelo.tipoProducto.add(tipo)
@@ -246,12 +250,12 @@ def guardar_modelo(request):
 
 @login_required
 def editar_modelo(request, modelo_id):
-    print('--- editar_modelo ---')
+    logger.debug('--- editar_modelo ---')
     modelo = get_object_or_404(Modelo, id=modelo_id)
     tipoSeleccionado = modelo.tipoProducto.all()
-    print(f'tipoSeleccionado: {[t.nombre for t in tipoSeleccionado]}')
+    logger.debug(f'tipoSeleccionado: {[t.nombre for t in tipoSeleccionado]}')
     tiposMarca = modelo.marca.tipoProducto.all()
-    print(f'tiposMarca: {[t.nombre for t in tiposMarca]}')
+    logger.debug(f'tiposMarca: {[t.nombre for t in tiposMarca]}')
     
     return render(request, 'editarModelos.html', {
         'modelo': modelo,
@@ -268,7 +272,7 @@ def actualizar_modelo(request, modelo_id):
         descripcion = request.POST.get('descripcion', '')
         activo = request.POST.get('activo') == 'true'
         tipos_ids = request.POST.get('tipo_id', '').split(',')
-        print(f'tipos_ids (raw): {tipos_ids}')
+        logger.debug(f'tipos_ids (raw): {tipos_ids}')
         
         # Filtrar IDs vacíos
         tipos_ids = [id for id in tipos_ids if id]
@@ -305,7 +309,7 @@ def actualizar_modelo(request, modelo_id):
         return redirect('editar_modelo', modelo_id=modelo_id)
 
 def eliminar_modelo(request, modelo_id):
-    print(f'Eliminar modelo ID: {modelo_id}')
+    logger.debug(f'Eliminar modelo ID: {modelo_id}')
     modelo = get_object_or_404(Modelo, id=modelo_id)
     nombre_modelo = modelo.nombre  # Guardar el nombre antes de eliminar
     modelo.delete()
@@ -323,7 +327,7 @@ def guardar_color(request):
     if request.method == 'POST':
         nombre = request.POST.get('color-nombre')
 
-        print(f'{nombre} hola')
+        logger.debug(f'{nombre} hola')
         activo = True
         codigo_hex = request.POST.get('colores_hex', '#FFFFFF')        
         if not nombre:
@@ -331,7 +335,7 @@ def guardar_color(request):
         
         
         colorEncontrado = Color.objects.filter(nombre=nombre, codigo_hex=codigo_hex).exists()
-        print(f'colorEncontrado: {colorEncontrado}')
+        logger.debug(f'colorEncontrado: {colorEncontrado}')
         
         if Color.objects.filter(nombre=nombre, codigo_hex=codigo_hex).exists():
             messages.error(request, f'El color {nombre} ya existe.')
@@ -367,7 +371,7 @@ def editar_color(request, color_id):
     return render(request, 'editarColores.html', context)
 
 def actualizar_color(request, color_id):
-    print(f'Actualizar color ID: {color_id}')
+    logger.debug(f'Actualizar color ID: {color_id}')
     nombre = request.POST.get('nombre')
     codigo_hex = request.POST.get('codigo_hex', '#FFFFFF')
     activoStr = request.POST.get('activo')
@@ -383,10 +387,10 @@ def actualizar_color(request, color_id):
         activo = True
     else:
         activo = False
-    print(f'{activoStr} {type(activoStr)} hola activo')
-    print(f'{activo} {type(activo)} hola activo')
+    logger.debug(f'{activoStr} {type(activoStr)} hola activo')
+    logger.debug(f'{activo} {type(activo)} hola activo')
     
-    print(f'Actualizar color ID: {color_id}, Nombre: {nombre}, Código HEX: {codigo_hex}, Activo: {activo}')
+    logger.debug(f'Actualizar color ID: {color_id}, Nombre: {nombre}, Código HEX: {codigo_hex}, Activo: {activo}')
     
     color = get_object_or_404(Color, id=color_id)
     color.nombre = nombre
@@ -400,7 +404,7 @@ def actualizar_color(request, color_id):
                                                  })
 
 def eliminar_color(request, color_id):
-    print(f'Eliminar color ID: {color_id}')
+    logger.debug(f'Eliminar color ID: {color_id}')
     color = get_object_or_404(Color, id=color_id)
     nombre_color = color.nombre  # Guardar el nombre antes de eliminar
     color.delete()
@@ -465,16 +469,16 @@ def actualizar_talla(request, talla_id):
     tallas = Talla.objects.all()
     for i in tallas:
         if i.valor == valor and i.id != talla_id:
-            print(f'La talla {valor} ya existe con ID {i.id}')
+            logger.debug(f'La talla {valor} ya existe con ID {i.id}')
             messages.error(request, f'La talla {valor} ya existe.')
             return redirect('editar_talla', talla_id=talla_id)
         
-    print(f'Actualizar talla ID: {talla_id}')
+    logger.debug(f'Actualizar talla ID: {talla_id}')
     tipo = request.POST.get('tipo', 'NUM')
     orden = request.POST.get('orden', 0)
     activo = request.POST.get('activo', 'off') == 'on'
     
-    print(f'Actualizar talla ID: {talla_id}, Valor: {valor}, Tipo: {tipo}, Orden: {orden}, Activo: {activo}')
+    logger.debug(f'Actualizar talla ID: {talla_id}, Valor: {valor}, Tipo: {tipo}, Orden: {orden}, Activo: {activo}')
     
     talla = get_object_or_404(Talla, id=talla_id)
     talla.valor = valor
@@ -489,7 +493,7 @@ def actualizar_talla(request, talla_id):
                                                  })
 
 def eliminar_talla(request, talla_id):
-    print(f'Eliminar talla ID: {talla_id}')
+    logger.debug(f'Eliminar talla ID: {talla_id}')
     talla = get_object_or_404(Talla, id=talla_id)
     nombre_talla = talla.valor  # Guardar el nombre antes de eliminar
     talla.delete()
@@ -539,14 +543,14 @@ def guardar_producto(request):
             precio_descuento = request.POST.get('descuento', None)
             stock = request.POST.get('stock', 0)
             
-            print('hasta aqui todo bien')
+            logger.debug('hasta aqui todo bien')
             
             # Validar que no exista producto con la misma combinación
             if Producto.objects.filter(modelo_id=modelo_id, colores__id__in=colores_ids, tallas__id__in=tallas_ids).exists():
                 messages.error(request, 'El producto con la combinación seleccionada de modelo, color y talla ya existe.')
                 return redirect('gestion_productos')
             
-            print(f'colores_ids: {colores_ids}')
+            logger.debug(f'colores_ids: {colores_ids}')
             
             # Validaciones
             if not modelo_id or not colores_ids or not tallas_ids or not precio:
@@ -573,33 +577,14 @@ def guardar_producto(request):
             producto.colores.add(*colores_ids)
             producto.tallas.add(*tallas_ids)
             
-            # Procesar imágenes para cada color seleccionado
+            # Procesar imágenes (varias por color, máximo 6) para cada color seleccionado
             for color_id in colores_ids:
-                file_key = f'imagen_color_{color_id}'
-                
-                if file_key in request.FILES:
-                    imagen_file = request.FILES[file_key]
-                    print(f'imagen_file: {imagen_file} para color {color_id}')
-                    
-                    # Buscar o crear imagen para este color-producto
-                    try:
-                        imagen_producto, created = ImagenProducto.objects.get_or_create(
-                            producto=producto,
-                            color_id=color_id,
-                            defaults={'imagen': imagen_file}
-                        )
-                        
-                        if not created:
-                            # Actualizar imagen existente
-                            imagen_producto.imagen = imagen_file
-                            imagen_producto.save()
-                        
-                        print(f'✅ Imagen {"creada" if created else "actualizada"} para color {color_id}')
-                    except Exception as e:
-                        print(f'❌ Error al procesar imagen para color {color_id}: {e}')
-                        # Puedes decidir si quieres continuar o retornar un error
-            else:
-                print(f'⚠️ No se encontró imagen para el color {color_id}')
+                archivos = request.FILES.getlist(f'imagen_color_{color_id}')
+                if archivos:
+                    guardadas, avisos = agregar_imagenes(producto, color_id, archivos)
+                    for aviso in avisos:
+                        messages.warning(request, aviso)
+                    logger.debug(f'Imágenes guardadas para color {color_id}: {guardadas}')
             
             return render(request, 'confirmacion.html', {
                 'url': '../../productos',
@@ -608,7 +593,7 @@ def guardar_producto(request):
             })
             
         except Exception as e:
-            print(f'❌ Error general al guardar producto: {e}')
+            logger.debug(f'❌ Error general al guardar producto: {e}')
             messages.error(request, f'Error al guardar el producto: {e}')
             return redirect('gestion_productos')
 
@@ -645,7 +630,7 @@ def editar_producto(request, producto_id):
     colores_seleccionados_ids = [color.id for color in colores_producto]
 
     for color in colores:
-        print(f'{color.nombre} hola')
+        logger.debug(f'{color.nombre} hola')
     
     if request.method == 'POST':
         # Procesar el formulario de actualización
@@ -665,7 +650,7 @@ def editar_producto(request, producto_id):
         if len(antesComaDescuento) > 1:
             precio_descuento = float(antesComaDescuento[0])
 
-        print(f'vamos bien hasta aqui {modelo_id} {color_id} {tallas_ids} {type(precio)} {type(precio_descuento)} {type(int(stock))} {activo}')
+        logger.debug(f'vamos bien hasta aqui {modelo_id} {color_id} {tallas_ids} {type(precio)} {type(precio_descuento)} {type(int(stock))} {activo}')
 
         try:
             # Actualizar el producto
@@ -674,56 +659,48 @@ def editar_producto(request, producto_id):
             producto.stock = int(stock) if stock else 0
             producto.activo = activo
             
-            print(f'vamos bien hasta aqui 2 {producto.precio} {producto.precio_descuento} {producto.stock} {producto.activo}')
+            logger.debug(f'vamos bien hasta aqui 2 {producto.precio} {producto.precio_descuento} {producto.stock} {producto.activo}')
             # Guardar cambios
             producto.save()
-            print('Producto actualizado correctamente')
+            logger.debug('Producto actualizado correctamente')
             # Actualizar las tallas (relación ManyToMany)
             producto.tallas.clear()
 
             for talla_id in tallas_ids:
-                print(f'talla id: {talla_id}')
+                logger.debug(f'talla id: {talla_id}')
                 if talla_id:  # Evitar IDs vacíos
                     producto.tallas.add(talla_id)
 
-            print('Tallas actualizadas correctamente')
+            logger.debug('Tallas actualizadas correctamente')
 
             # Actualizar los colores (relación ManyToMany)
             producto.colores.clear()
 
-            print(f'no hace el recorrifo {(color_id)}')
+            logger.debug(f'no hace el recorrifo {(color_id)}')
             for color in color_id:
-                print(f'color id: {color}')
+                logger.debug(f'color id: {color}')
                 if color:  # Evitar IDs vacíos
                     producto.colores.add(color)
 
-            print('Colores actualizados correctamente')
+            logger.debug('Colores actualizados correctamente')
 
-            for color_id in color_id:
-                file_key = f'imagen_color_{color_id}'
-                
-                if file_key in request.FILES:
-                    imagen_file = request.FILES[file_key]
-                    
-                    # Buscar o crear imagen para este color-producto
-                    try:
-                        imagen_producto, created = ImagenProducto.objects.get_or_create(
-                            producto=producto,
-                            color_id=color_id,
-                            defaults={'imagen': imagen_file}
-                        )
-                        
-                        if not created:
-                            # Actualizar imagen existente
-                            imagen_producto.imagen = imagen_file
-                            imagen_producto.save()
-                        
-                        print(f'✅ Imagen {"creada" if created else "actualizada"} para color {color_id}')
+            hay_avisos = False
+            for cid in color_id:
+                cid = cid.strip()
+                if not cid:
+                    continue
+                archivos = request.FILES.getlist(f'imagen_color_{cid}')
+                if archivos:
+                    # Las fotos nuevas se SUMAN a las existentes (máximo 6 por color)
+                    guardadas, avisos = agregar_imagenes(producto, cid, archivos)
+                    for aviso in avisos:
+                        messages.warning(request, aviso)
+                        hay_avisos = True
+                    logger.debug(f'Imágenes agregadas para color {cid}: {guardadas}')
 
-                        
-                    except Exception as e:
-                        print(f'❌ Error al procesar imagen para color {color_id}: {e}')
-
+            if hay_avisos:
+                # Se queda en la edición para que se vea el mensaje junto a las fotos
+                return redirect('editar_producto', producto_id=producto.id)
             return redirect('gestion_productos')
             
         except Exception as e:
@@ -751,6 +728,22 @@ def editar_producto(request, producto_id):
 
     })
 
+@login_required
+@require_POST
+def eliminar_imagen_producto(request, imagen_id):
+    """Elimina UNA foto (registro + archivo en disco). Solo POST; responde JSON (se llama por fetch)."""
+    imagen = get_object_or_404(ImagenProducto, id=imagen_id)
+    producto_id, color_id = imagen.producto_id, imagen.color_id
+    eliminar_imagen(imagen)
+    restantes = list(ImagenProducto.objects.filter(producto_id=producto_id, color_id=color_id))
+    return JsonResponse({
+        'ok': True,
+        'color_id': color_id,
+        'restantes': len(restantes),
+        'maximo': MAX_FOTOS_POR_COLOR,
+        'principal_id': restantes[0].id if restantes else None,
+    })
+
 def obtener_modelos_por_marca(request, marca_id):
     modelos = Modelo.objects.filter(marca_id=marca_id).values('id', 'nombre')
     modelos_list = list(modelos)
@@ -774,13 +767,13 @@ def catalogo_principal(request):
     marcas = Marca.objects.filter(tipoProducto__nombre='Calzado', activo=True).distinct()
     listamarca = []
     for marca in marcas:
-        print(f'marca : {marca.nombre} ')
+        logger.debug(f'marca : {marca.nombre} ')
         for producto in productos:
-            print(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
+            logger.debug(f'producto : {producto.modelo.marca.nombre} = {marca.nombre}')
             if producto.modelo.marca.nombre == marca.nombre:
                 if marca not in listamarca:
                     listamarca.append(marca)
-                    print(f'marca agregada : {marca.nombre} ')
+                    logger.debug(f'marca agregada : {marca.nombre} ')
        
     colores = Color.objects.filter(activo=True)
     
@@ -802,14 +795,14 @@ def catalogo_principal(request):
     if precio_max:
         productos = productos.filter(precio__lte=precio_max)
     
-    print(f'marcas lista : {listamarca}')
-    print(f'marcas : {type(marcas)}')
-    print(f'colores : {colores}')
+    logger.debug(f'marcas lista : {listamarca}')
+    logger.debug(f'marcas : {type(marcas)}')
+    logger.debug(f'colores : {colores}')
     for marca in listamarca:
-        print(f'{marca.nombre} hola')
+        logger.debug(f'{marca.nombre} hola')
 
     for color in colores:
-        print(f'{color.nombre} hola')
+        logger.debug(f'{color.nombre} hola')
         
     context = {
         'productos': productos,
@@ -945,7 +938,7 @@ def filtrar_productos(request):
             precio = data.get('precio', '')
             
             
-            print(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
+            logger.debug(f"Filtros recibidos - Marcas: {marcas}, Precio: {precio}")
             
             # Filtrar productos
             productos = Producto.objects.all()
@@ -954,7 +947,7 @@ def filtrar_productos(request):
 
             if marcas:
                 productos = productos.filter(modelo__marca__id__in=marcas, modelo__tipoProducto__nombre='Calzado').distinct()
-                print(f"Productos después de filtrar por marcas: {productos.count()}")
+                logger.debug(f"Productos después de filtrar por marcas: {productos.count()}")
                 
             if precio:
                 if precio == '0-50':
@@ -991,7 +984,7 @@ def filtrar_productos(request):
                         Q(precio_descuento__isnull=False, precio_descuento__gte=200,) |
                         Q(precio_descuento__isnull=True, precio__gte=200)
                     ).distinct()
-                print(f"Productos después de filtrar por precio: {productos.count()}")
+                logger.debug(f"Productos después de filtrar por precio: {productos.count()}")
             
            
             
@@ -1018,11 +1011,11 @@ def filtrar_productos(request):
                 }
                 productos_data.append(producto_dict)
             
-            print(f"Enviando {len(productos_data)} productos")
+            logger.debug(f"Enviando {len(productos_data)} productos")
             return JsonResponse({'productos': productos_data})
             
         except Exception as e:
-            print(f"Error en filtrar_productos: {str(e)}")
+            logger.debug(f"Error en filtrar_productos: {str(e)}")
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -1030,9 +1023,9 @@ def filtrar_productos(request):
 def obtener_detalles_producto(request, producto_id):
     if request.method == 'GET':
         try:
-            print(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
+            logger.debug(f'Obteniendo detalles del producto con ID: {type(producto_id)}')
             producto = Producto.objects.get(id=producto_id)
-            print(f'Producto encontrado: {producto}')
+            logger.debug(f'Producto encontrado: {producto}')
             # Serializar datos del producto
             producto_data = {
                 'id': producto.id,
@@ -1047,7 +1040,7 @@ def obtener_detalles_producto(request, producto_id):
                 'imagenes': []
             }
 
-            print(f'Producto data: {producto_data}')
+            logger.debug(f'Producto data: {producto_data}')
             
             # Añadir colores
             for color in producto.colores.all():
@@ -1057,8 +1050,8 @@ def obtener_detalles_producto(request, producto_id):
                     'codigo_hex': color.codigo_hex
                 })
 
-            print(f'Colores añadidos: {producto_data["colores"]}')
-            print(f'data con colores: {producto_data}')
+            logger.debug(f'Colores añadidos: {producto_data["colores"]}')
+            logger.debug(f'data con colores: {producto_data}')
             
             # Añadir imágenes
             for imagen in producto.imagenes.all():
@@ -1069,8 +1062,8 @@ def obtener_detalles_producto(request, producto_id):
                     'es_principal': imagen.es_principal
                 })
 
-            print(f'Imágenes añadidas: {producto_data["imagenes"]}')
-            print(f'data con imagenes: {producto_data}')
+            logger.debug(f'Imágenes añadidas: {producto_data["imagenes"]}')
+            logger.debug(f'data con imagenes: {producto_data}')
             
             return JsonResponse(producto_data)
             
@@ -1082,7 +1075,7 @@ def obtener_detalles_producto(request, producto_id):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 def eliminar_producto(request, producto_id):    
-    print(f'Eliminar producto ID: {producto_id}')
+    logger.debug(f'Eliminar producto ID: {producto_id}')
     producto = get_object_or_404(Producto, id=producto_id)
     nombre_producto = producto.modelo.nombre  # Guardar el nombre antes de eliminar
     producto.delete()

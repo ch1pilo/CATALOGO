@@ -35,3 +35,12 @@ def get_imagen_principal_por_color(producto, color_id):
     except (ValueError, TypeError):
         pass
     return None
+
+@register.filter
+def get_imagenes_por_color(imagenes, color_id):
+    """Retorna la lista de TODAS las imágenes de un color (en orden)"""
+    try:
+        color_id = int(color_id)
+    except (ValueError, TypeError):
+        return []
+    return [img for img in imagenes if img.color_id == color_id]
